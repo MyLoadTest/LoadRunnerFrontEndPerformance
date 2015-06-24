@@ -1,0 +1,20 @@
+﻿<AddIn name="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn"
+        author="MyLoadTest"
+        url="http://www.myloadtest.com/"
+        description="A VuGen add-in for front-end performance analysis">
+    <Runtime>
+        <Import assembly="Omnifactotum.dll" />
+        <Import assembly="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.dll" />
+    </Runtime>
+
+    <Manifest>
+        <Identity name="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn"
+                version="@MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.dll" />
+        <Dependency addin="SharpDevelop" version="4.1" />
+    </Manifest>
+
+    <Path name="/Workspace/Autostart">
+        <Class id="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Startup"
+                class="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands.StartupCommand" />
+    </Path>
+</AddIn>
