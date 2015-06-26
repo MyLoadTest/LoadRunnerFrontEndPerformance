@@ -1,4 +1,6 @@
-﻿<AddIn name="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn"
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<AddIn name="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn"
         author="MyLoadTest"
         url="http://www.myloadtest.com/"
         description="A VuGen add-in for front-end performance analysis">
@@ -16,5 +18,15 @@
     <Path name="/Workspace/Autostart">
         <Class id="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Startup"
                 class="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands.StartupCommand" />
+    </Path>
+
+    <Path name="/SharpDevelop/Workbench/Pads">
+        <Pad id="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Pads.AnalysisPad"
+                category="Main"
+                icon="FrontEndPerformanceAnalysis"
+                title="Front-end Performance"
+                defaultPosition="Bottom, Hidden"
+                insertafter="OutputPad"
+                class="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Pads.AnalysisPad" />
     </Path>
 </AddIn>
