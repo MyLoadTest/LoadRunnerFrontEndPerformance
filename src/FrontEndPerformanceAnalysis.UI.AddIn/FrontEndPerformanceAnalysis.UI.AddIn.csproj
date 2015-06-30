@@ -68,7 +68,11 @@
     <Compile Include="Controls\AnalysisControl.xaml.cs">
       <DependentUpon>AnalysisControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\AnalysisControlViewModel.cs" />
+    <Compile Include="Controls\ControlItem.cs" />
+    <Compile Include="Controls\ControlItem.Helper.cs" />
     <Compile Include="HostCommands\StartupCommand.cs" />
+    <Compile Include="LocalHelper.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
@@ -83,6 +87,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="ScoreType.cs" />
+    <Compile Include="WpfHelper.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

@@ -61,6 +61,33 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Page weight.
+        /// </summary>
+        internal static string Enum_ScoreType_PageWeight {
+            get {
+                return ResourceManager.GetString("Enum_ScoreType_PageWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Score.
+        /// </summary>
+        internal static string Enum_ScoreType_Score {
+            get {
+                return ResourceManager.GetString("Enum_ScoreType_Score", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Waterfall.
+        /// </summary>
+        internal static string Enum_ScoreType_Waterfall {
+            get {
+                return ResourceManager.GetString("Enum_ScoreType_Waterfall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap FrontEndPerformanceAnalysis {
