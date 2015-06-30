@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Data;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands;
 using Omnifactotum;
 using Omnifactotum.Annotations;
 
@@ -39,6 +41,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 .ToArray();
 
             ScoreTypes = new CollectionView(scoreTypesInternal);
+
+            CheckPerformanceCommand = new RelayCommand(
+                ExecuteCheckPerformanceCommand,
+                CanExecuteCheckPerformanceCommand);
+
+            TransactionNames.CurrentChanged += TransactionNames_CurrentChanged;
+            ScoreTypes.CurrentChanged += ScoreTypes_CurrentChanged;
         }
 
         #endregion
@@ -121,6 +130,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
+        [NotNull]
+        public RelayCommand CheckPerformanceCommand
+        {
+            get;
+            private set;
+        }
+
         #endregion
 
         #region Public Methods
@@ -146,6 +162,48 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 _transactionNamesInternal.Clear();
                 transactionNames.DoForEach(_transactionNamesInternal.Add);
             }
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void TransactionNames_CurrentChanged(object sender, EventArgs eventArgs)
+        {
+            CheckPerformanceCommand.RaiseCanExecuteChanged();
+        }
+
+        private void ScoreTypes_CurrentChanged(object sender, EventArgs eventArgs)
+        {
+            CheckPerformanceCommand.RaiseCanExecuteChanged();
+        }
+
+        private bool CanExecuteCheckPerformanceCommand(object arg)
+        {
+            return SelectedScoreType.HasValue && !SelectedTransactionName.IsNullOrWhiteSpace();
+        }
+
+        private void ExecuteCheckPerformanceCommand(object obj)
+        {
+            if (!SelectedScoreType.HasValue || SelectedTransactionName.IsNullOrWhiteSpace())
+            {
+                return;
+            }
+
+            var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".har");
+            var filePath = Path.Combine(Path.GetTempPath(), fileName);
+
+            var fileData = LocalHelper.GetTestHarFile(SelectedTransactionName);
+            File.WriteAllBytes(filePath, fileData);
+
+            RunTools(filePath);
+        }
+
+        //// ReSharper disable once MemberCanBeMadeStatic.Local - TEMP
+        //// ReSharper disable once UnusedParameter.Local - TEMP
+        private void RunTools(string filePath)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
