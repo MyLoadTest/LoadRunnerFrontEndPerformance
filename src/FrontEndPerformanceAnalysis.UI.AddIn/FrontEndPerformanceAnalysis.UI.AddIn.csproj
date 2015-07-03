@@ -52,6 +52,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
@@ -88,6 +89,9 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Properties\Settings.cs">
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="ScoreType.cs" />
     <Compile Include="WpfHelper.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -95,6 +99,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -143,6 +148,7 @@ if exist "%25ADDIN_TARGET_PATH%25" (
 @echo * Copying the add-in to target directory "%25ADDIN_TARGET_PATH%25".
 xcopy /f /g /h /r /y "$(TargetDir)\MyLoadTest.*" "%25ADDIN_TARGET_PATH%25\" || @exit 2
 xcopy /f /g /h /r /y "$(TargetDir)\Omnifactotum.*" "%25ADDIN_TARGET_PATH%25\" || @exit 3
+xcopy /f /g /h /r /y "$(ProjectDir)\..\..\lib\PageSpeed\*.*" "%25ADDIN_TARGET_PATH%25\lib\PageSpeed\" || @exit 4
 @echo * Copying the add-in to target directory - DONE.
 @echo.
 </PostBuildEvent>

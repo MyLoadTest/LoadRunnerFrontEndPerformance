@@ -1,15 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
+using Omnifactotum.Annotations;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 {
     internal static class LocalHelper
     {
+        #region Constants and Fields
+
+        private static readonly HashSet<char> InvalidPathChars = Path.GetInvalidPathChars().ToHashSet();
+
+        #endregion
+
         #region Public Methods
 
-        public static string GetTranslation(this Enum value)
+        public static string GetTranslation([NotNull] this Enum value)
         {
             #region Argument Check
 
@@ -36,7 +45,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
             return translation;
         }
 
-        public static byte[] GetTestHarFile(string harName)
+        public static byte[] GetTestHarFile([NotNull] string harName)
         {
             #region Argument Check
 
@@ -51,6 +60,22 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 
             var name = string.Format(CultureInfo.InvariantCulture, "HAR_{0}", harName);
             return (byte[])Resources.ResourceManager.GetObject(name).EnsureNotNull();
+        }
+
+        public static bool PathHasInvalidChars([NotNull] string path)
+        {
+            #region Argument Check
+
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException(@"The value can be neither empty string nor null.", "path");
+            }
+
+            #endregion
+
+            var chars = new HashSet<char>(path);
+            chars.IntersectWith(InvalidPathChars);
+            return chars.Count != 0;
         }
 
         #endregion
