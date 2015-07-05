@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -76,6 +77,27 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
             var chars = new HashSet<char>(path);
             chars.IntersectWith(InvalidPathChars);
             return chars.Count != 0;
+        }
+
+        public static void KillNoThrow([NotNull] this Process process)
+        {
+            #region Argument Check
+
+            if (process == null)
+            {
+                throw new ArgumentNullException("process");
+            }
+
+            #endregion
+
+            try
+            {
+                process.Kill();
+            }
+            catch (Exception)
+            {
+                // Nothing to do
+            }
         }
 
         #endregion

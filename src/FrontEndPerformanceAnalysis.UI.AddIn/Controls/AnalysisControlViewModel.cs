@@ -1,12 +1,17 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Threading;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 using Omnifactotum;
 using Omnifactotum.Annotations;
 
@@ -23,6 +28,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         private static readonly DependencyPropertyKey ScoreTypesPropertyKey =
             WpfHelper.For<AnalysisControlViewModel>.RegisterReadOnlyDependencyProperty(
                 obj => obj.ScoreTypes);
+
+        private static readonly DependencyPropertyKey AnalysisResultPropertyKey =
+            WpfHelper.For<AnalysisControlViewModel>.RegisterReadOnlyDependencyProperty(
+                obj => obj.AnalysisResult);
+
+        private static readonly string PageSpeedExecutablePath =
+            Path.GetFullPath(Settings.Default.PageSpeedExecutablePath);
+
+        private static readonly TimeSpan PageSpeedRunTimeout = TimeSpan.FromMinutes(1);
 
         private readonly List<string> _transactionNamesInternal;
 
@@ -42,7 +56,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
             ScoreTypes = new CollectionView(scoreTypesInternal);
 
-            CheckPerformanceCommand = new RelayCommand(
+            CheckPerformanceCommand = new AsyncRelayCommand(
                 ExecuteCheckPerformanceCommand,
                 CanExecuteCheckPerformanceCommand);
 
@@ -72,6 +86,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
+        public static DependencyProperty AnalysisResultProperty
+        {
+            [DebuggerNonUserCode]
+            get
+            {
+                return AnalysisResultPropertyKey.DependencyProperty;
+            }
+        }
+
         [NotNull]
         public ICollectionView TransactionNames
         {
@@ -97,6 +120,19 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             private set
             {
                 SetValue(ScoreTypesPropertyKey, value);
+            }
+        }
+
+        public string AnalysisResult
+        {
+            get
+            {
+                return (string)GetValue(AnalysisResultProperty);
+            }
+
+            private set
+            {
+                SetValue(AnalysisResultPropertyKey, value);
             }
         }
 
@@ -131,7 +167,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [NotNull]
-        public RelayCommand CheckPerformanceCommand
+        public AsyncRelayCommand CheckPerformanceCommand
         {
             get;
             private set;
@@ -168,6 +204,51 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Private Methods
 
+        private static PageSpeedOutput RunTools(string inputFilePath, string outputFilePath)
+        {
+            var arguments = string.Format(
+                CultureInfo.InvariantCulture,
+                @"-input_file ""{0}"" -output_file ""{1}"" -output_format unformatted_json",
+                inputFilePath,
+                outputFilePath);
+
+            var startInfo = new ProcessStartInfo(PageSpeedExecutablePath, arguments)
+            {
+                CreateNoWindow = true,
+                ErrorDialog = false,
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            using (var process = Process.Start(startInfo))
+            {
+                if (process == null)
+                {
+                    throw new InvalidOperationException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            @"Unable to run the required tool ""{0}"".",
+                            PageSpeedExecutablePath));
+                }
+
+                var waitResult = process.WaitForExit((int)PageSpeedRunTimeout.TotalMilliseconds);
+                if (!waitResult)
+                {
+                    process.KillNoThrow();
+
+                    throw new InvalidOperationException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            @"The tool ""{0}"" has not exited after {1}.",
+                            PageSpeedExecutablePath,
+                            PageSpeedRunTimeout));
+                }
+            }
+
+            var pageSpeedOutput = PageSpeedOutput.DeserializeFromFile(outputFilePath);
+            return pageSpeedOutput;
+        }
+
         private void TransactionNames_CurrentChanged(object sender, EventArgs eventArgs)
         {
             CheckPerformanceCommand.RaiseCanExecuteChanged();
@@ -185,25 +266,35 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private void ExecuteCheckPerformanceCommand(object obj)
         {
-            if (!SelectedScoreType.HasValue || SelectedTransactionName.IsNullOrWhiteSpace())
+            var selectedScoreType = Dispatcher.Invoke(() => SelectedScoreType, DispatcherPriority.Send);
+            var selectedTransactionName = Dispatcher.Invoke(() => SelectedTransactionName, DispatcherPriority.Send);
+
+            if (!selectedScoreType.HasValue || selectedTransactionName == null)
             {
                 return;
             }
 
-            var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".har");
-            var filePath = Path.Combine(Path.GetTempPath(), fileName);
+            Dispatcher.Invoke(() => AnalysisResult = "Analysing...", DispatcherPriority.Render);
 
-            var fileData = LocalHelper.GetTestHarFile(SelectedTransactionName);
-            File.WriteAllBytes(filePath, fileData);
+            PageSpeedOutput pageSpeedOutput;
+            using (var tempFileCollection = new TempFileCollection(Path.GetTempPath(), false))
+            {
+                var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".har");
 
-            RunTools(filePath);
-        }
+                var inputFilePath = Path.Combine(Path.GetTempPath(), fileName);
+                tempFileCollection.AddFile(inputFilePath, false);
 
-        //// ReSharper disable once MemberCanBeMadeStatic.Local - TEMP
-        //// ReSharper disable once UnusedParameter.Local - TEMP
-        private void RunTools(string filePath)
-        {
-            throw new NotImplementedException();
+                var outputFilePath = inputFilePath + ".json";
+                tempFileCollection.AddFile(outputFilePath, false);
+
+                var fileData = LocalHelper.GetTestHarFile(selectedTransactionName);
+                File.WriteAllBytes(inputFilePath, fileData);
+
+                pageSpeedOutput = RunTools(inputFilePath, outputFilePath);
+            }
+
+            var analysisResult = string.Format(CultureInfo.InvariantCulture, "Score = {0}", pageSpeedOutput.Score);
+            Dispatcher.Invoke(() => AnalysisResult = analysisResult, DispatcherPriority.Render);
         }
 
         #endregion

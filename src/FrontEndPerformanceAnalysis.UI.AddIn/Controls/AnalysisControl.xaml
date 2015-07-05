@@ -84,6 +84,12 @@
         </Grid>
 
         <RichTextBox Grid.Row="1" IsReadOnly="True" IsReadOnlyCaretVisible="True" HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch" />
+                VerticalAlignment="Stretch">
+            <FlowDocument>
+                <Paragraph>
+                    <Run Text="{Binding AnalysisResult,Mode=OneWay}" />
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
     </Grid>
 </UserControl>

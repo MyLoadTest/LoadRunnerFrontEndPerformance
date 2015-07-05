@@ -54,6 +54,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -66,6 +67,8 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\RelayCommandBase.cs" />
+    <Compile Include="Commands\AsyncRelayCommand.cs" />
     <Compile Include="Commands\RelayCommand.cs" />
     <Compile Include="Controls\AnalysisControl.xaml.cs">
       <DependentUpon>AnalysisControl.xaml</DependentUpon>
@@ -75,6 +78,9 @@
     <Compile Include="Controls\ControlItem.Helper.cs" />
     <Compile Include="HostCommands\StartupCommand.cs" />
     <Compile Include="LocalHelper.cs" />
+    <Compile Include="ObjectMappings\PageSpeedOutput.cs" />
+    <Compile Include="ObjectMappings\RuleInfo.cs" />
+    <Compile Include="ObjectMappings\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

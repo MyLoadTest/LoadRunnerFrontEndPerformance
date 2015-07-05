@@ -5,20 +5,32 @@ using Omnifactotum.Annotations;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands
 {
-    internal sealed class RelayCommand : RelayCommandBase, ICommand
+    internal sealed class AsyncRelayCommand : RelayCommandBase, ICommand
     {
         #region Constructors
 
-        public RelayCommand([NotNull] Action<object> execute, [CanBeNull] Func<object, bool> canExecute)
+        public AsyncRelayCommand([NotNull] Action<object> execute, [CanBeNull] Func<object, bool> canExecute)
             : base(execute, canExecute)
         {
             // Nothing to do
         }
 
-        public RelayCommand([NotNull] Action<object> execute)
+        public AsyncRelayCommand([NotNull] Action<object> execute)
             : this(execute, null)
         {
             // Nothing to do
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        public bool IsExecuting
+        {
+            get
+            {
+                return IsExecutingInternal;
+            }
         }
 
         #endregion
@@ -27,7 +39,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands
 
         public void Execute(object parameter)
         {
-            ExecuteInternal(parameter, false);
+            ExecuteInternal(parameter, true);
         }
 
         #endregion
