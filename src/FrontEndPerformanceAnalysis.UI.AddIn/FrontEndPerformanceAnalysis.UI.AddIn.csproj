@@ -98,7 +98,7 @@
     <Compile Include="Properties\Settings.cs">
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="ScoreType.cs" />
+    <Compile Include="AnalysisType.cs" />
     <Compile Include="WpfHelper.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

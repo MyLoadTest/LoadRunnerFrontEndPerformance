@@ -50,7 +50,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             TransactionNames = new CollectionView(_transactionNamesInternal);
 
             var scoreTypesInternal = EnumFactotum
-                .GetAllValues<ScoreType>()
+                .GetAllValues<AnalysisType>()
                 .Select(value => ControlItem.Create(value, value.GetTranslation()))
                 .ToArray();
 
@@ -151,12 +151,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [CanBeNull]
-        public ScoreType? SelectedScoreType
+        public AnalysisType? SelectedAnalysisType
         {
             get
             {
-                var currentItem = (ControlItem<ScoreType>)ScoreTypes.CurrentItem;
-                return currentItem == null ? default(ScoreType?) : currentItem.Value;
+                var currentItem = (ControlItem<AnalysisType>)ScoreTypes.CurrentItem;
+                return currentItem == null ? default(AnalysisType?) : currentItem.Value;
             }
 
             set
@@ -204,8 +204,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Private Methods
 
-        private static PageSpeedOutput RunTools(string inputFilePath, string outputFilePath)
+        private static PageSpeedOutput RunTools(
+            AnalysisType analysisType,
+            string inputFilePath,
+            string outputFilePath)
         {
+            if (analysisType != AnalysisType.Score)
+            {
+                throw analysisType.CreateEnumValueNotImplementedException();
+            }
+
             var arguments = string.Format(
                 CultureInfo.InvariantCulture,
                 @"-input_file ""{0}"" -output_file ""{1}"" -output_format unformatted_json",
@@ -261,12 +269,35 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private bool CanExecuteCheckPerformanceCommand(object arg)
         {
-            return SelectedScoreType.HasValue && !SelectedTransactionName.IsNullOrWhiteSpace();
+            return SelectedAnalysisType.HasValue && !SelectedTransactionName.IsNullOrWhiteSpace();
         }
 
         private void ExecuteCheckPerformanceCommand(object obj)
         {
-            var selectedScoreType = Dispatcher.Invoke(() => SelectedScoreType, DispatcherPriority.Send);
+            try
+            {
+                ExecuteCheckPerformanceCommandInternal();
+            }
+            catch (Exception ex)
+            {
+                if (ex.IsFatal())
+                {
+                    throw;
+                }
+
+                var errorMessage = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Error has occurred:{0}{0}{1}",
+                    Environment.NewLine,
+                    ex);
+
+                Dispatcher.Invoke(() => AnalysisResult = errorMessage, DispatcherPriority.Render);
+            }
+        }
+
+        private void ExecuteCheckPerformanceCommandInternal()
+        {
+            var selectedScoreType = Dispatcher.Invoke(() => SelectedAnalysisType, DispatcherPriority.Send);
             var selectedTransactionName = Dispatcher.Invoke(() => SelectedTransactionName, DispatcherPriority.Send);
 
             if (!selectedScoreType.HasValue || selectedTransactionName == null)
@@ -290,7 +321,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 var fileData = LocalHelper.GetTestHarFile(selectedTransactionName);
                 File.WriteAllBytes(inputFilePath, fileData);
 
-                pageSpeedOutput = RunTools(inputFilePath, outputFilePath);
+                pageSpeedOutput = RunTools(selectedScoreType.Value, inputFilePath, outputFilePath);
             }
 
             var analysisResult = string.Format(CultureInfo.InvariantCulture, "Score = {0}", pageSpeedOutput.Score);

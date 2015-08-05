@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 {
-    internal enum ScoreType
+    internal enum AnalysisType
     {
         Waterfall, 
         PageWeight, 
