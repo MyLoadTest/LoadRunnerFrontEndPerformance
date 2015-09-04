@@ -47,8 +47,12 @@
       <HintPath>..\..\lib\SharpDevelop\ICSharpCode.SharpDevelop.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Omnifactotum, Version=0.3.0.114, Culture=neutral, PublicKeyToken=463364b83539fcba, processorArchitecture=MSIL">
-      <HintPath>..\packages\Omnifactotum.0.3.0.114\lib\net40-Client\Omnifactotum.dll</HintPath>
+    <Reference Include="Omnifactotum, Version=0.3.0.119, Culture=neutral, PublicKeyToken=463364b83539fcba, processorArchitecture=MSIL">
+      <HintPath>..\packages\Omnifactotum.0.3.0.119\lib\net40-Client\Omnifactotum.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Omnifactotum.Wpf, Version=0.1.0.1, Culture=neutral, PublicKeyToken=3f9b8ca52e9bd6cf, processorArchitecture=MSIL">
+      <HintPath>..\packages\Omnifactotum.Wpf.0.1.0.1\lib\net40-Client\Omnifactotum.Wpf.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -76,10 +80,17 @@
     <Compile Include="Controls\AnalysisControlViewModel.cs" />
     <Compile Include="Controls\ControlItem.cs" />
     <Compile Include="Controls\ControlItem.Helper.cs" />
+    <Compile Include="Converters\MatchedAnalysisTypeToVisibilityConverter.cs" />
+    <Compile Include="Converters\ErrorMessageToVisibilityConverter.cs" />
+    <Compile Include="Converters\MatchedValueToVisibilityConverter.cs" />
     <Compile Include="HostCommands\StartupCommand.cs" />
     <Compile Include="LocalHelper.cs" />
+    <Compile Include="ObjectMappings\FormattedStringArg.cs" />
     <Compile Include="ObjectMappings\PageSpeedOutput.cs" />
-    <Compile Include="ObjectMappings\RuleInfo.cs" />
+    <Compile Include="ObjectMappings\RuleResult.cs" />
+    <Compile Include="ObjectMappings\FormattedString.cs" />
+    <Compile Include="ObjectMappings\UrlBlock.cs" />
+    <Compile Include="ObjectMappings\UrlData.cs" />
     <Compile Include="ObjectMappings\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -99,7 +110,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="AnalysisType.cs" />
-    <Compile Include="WpfHelper.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -126,6 +136,7 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>@verify other 2&gt;nul

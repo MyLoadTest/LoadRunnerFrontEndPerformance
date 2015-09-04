@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -8,6 +9,7 @@ using Omnifactotum.Annotations;
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings
 {
     [DataContract]
+    [DebuggerDisplay("Score = {Score}, Version = {Version}, Locale = {Locale}")]
     internal sealed class PageSpeedOutput
     {
         #region Constants and Fields
@@ -19,8 +21,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappin
 
         #region Public Properties
 
+        [DataMember(Name = "locale")]
+        public string Locale
+        {
+            get;
+            set;
+        }
+
         [DataMember(Name = "rule_results")]
-        public RuleInfo[] RuleInfos
+        public RuleResult[] RuleResults
         {
             get;
             set;

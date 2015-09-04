@@ -1,16 +1,32 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings
 {
     [DataContract]
-    internal sealed class RuleInfo
+    [DebuggerDisplay("{RuleName,nq} : {RuleImpact}{Experimental ? \" (experimental)\" : string.Empty,nq}")]
+    internal sealed class RuleResult
     {
         #region Public Properties
 
         [DataMember(Name = "rule_name")]
         public string RuleName
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "localized_rule_name")]
+        public string LocalizedRuleName
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "experimental")]
+        public bool Experimental
         {
             get;
             set;
@@ -23,8 +39,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappin
             set;
         }
 
-        [DataMember(Name = "results")]
-        public dynamic Results
+        [DataMember(Name = "url_blocks")]
+        public UrlBlock[] UrlBlocks
         {
             get;
             set;

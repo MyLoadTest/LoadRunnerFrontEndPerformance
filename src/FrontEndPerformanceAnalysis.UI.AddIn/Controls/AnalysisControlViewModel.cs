@@ -14,24 +14,37 @@ using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 using Omnifactotum;
 using Omnifactotum.Annotations;
+using Omnifactotum.Wpf;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 {
+    using static WpfFactotum.For<AnalysisControlViewModel>;
+
     internal sealed class AnalysisControlViewModel : DependencyObject
     {
         #region Constants and Fields
 
         private static readonly DependencyPropertyKey TransactionNamesPropertyKey =
-            WpfHelper.For<AnalysisControlViewModel>.RegisterReadOnlyDependencyProperty(
-                obj => obj.TransactionNames);
+            RegisterReadOnlyDependencyProperty(obj => obj.TransactionNames);
 
         private static readonly DependencyPropertyKey ScoreTypesPropertyKey =
-            WpfHelper.For<AnalysisControlViewModel>.RegisterReadOnlyDependencyProperty(
-                obj => obj.ScoreTypes);
+            RegisterReadOnlyDependencyProperty(obj => obj.AnalysisTypes);
 
         private static readonly DependencyPropertyKey AnalysisResultPropertyKey =
-            WpfHelper.For<AnalysisControlViewModel>.RegisterReadOnlyDependencyProperty(
-                obj => obj.AnalysisResult);
+            RegisterReadOnlyDependencyProperty(obj => obj.AnalysisResult);
+
+        private static readonly DependencyPropertyKey AnalysisErrorMessagePropertyKey =
+            RegisterReadOnlyDependencyProperty(obj => obj.AnalysisErrorMessage);
+
+        private static readonly DependencyProperty SelectedTransactionNameProperty =
+            RegisterDependencyProperty(
+                obj => obj.SelectedTransactionName,
+                new PropertyMetadata(null, OnSelectedTransactionNameChanged, OnCoerceSelectedTransactionName));
+
+        private static readonly DependencyProperty SelectedAnalysisTypeProperty =
+            RegisterDependencyProperty(
+                obj => obj.SelectedAnalysisType,
+                new PropertyMetadata(null, OnSelectedAnalysisTypeChanged, OnCoerceSelectedAnalysisType));
 
         private static readonly string PageSpeedExecutablePath =
             Path.GetFullPath(Settings.Default.PageSpeedExecutablePath);
@@ -54,14 +67,26 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 .Select(value => ControlItem.Create(value, value.GetTranslation()))
                 .ToArray();
 
-            ScoreTypes = new CollectionView(scoreTypesInternal);
+            var analysisTypesCollectionViewSource = new CollectionViewSource
+            {
+                Source = scoreTypesInternal,
+                SortDescriptions =
+                {
+                    new SortDescription(nameof(ControlItem<AnalysisType>.Text), ListSortDirection.Ascending)
+                }
+            };
+
+            AnalysisTypes = analysisTypesCollectionViewSource.View.EnsureNotNull();
 
             CheckPerformanceCommand = new AsyncRelayCommand(
                 ExecuteCheckPerformanceCommand,
                 CanExecuteCheckPerformanceCommand);
 
             TransactionNames.CurrentChanged += TransactionNames_CurrentChanged;
-            ScoreTypes.CurrentChanged += ScoreTypes_CurrentChanged;
+            AnalysisTypes.CurrentChanged += AnalysisTypes_CurrentChanged;
+
+            CoerceValue(SelectedTransactionNameProperty);
+            CoerceValue(SelectedAnalysisTypeProperty);
         }
 
         #endregion
@@ -95,6 +120,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
+        public static DependencyProperty AnalysisErrorMessageProperty
+        {
+            [DebuggerNonUserCode]
+            get
+            {
+                return AnalysisErrorMessagePropertyKey.DependencyProperty;
+            }
+        }
+
         [NotNull]
         public ICollectionView TransactionNames
         {
@@ -110,7 +144,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [NotNull]
-        public ICollectionView ScoreTypes
+        public ICollectionView AnalysisTypes
         {
             get
             {
@@ -136,17 +170,30 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
+        public string AnalysisErrorMessage
+        {
+            get
+            {
+                return (string)GetValue(AnalysisErrorMessageProperty);
+            }
+
+            private set
+            {
+                SetValue(AnalysisErrorMessagePropertyKey, value);
+            }
+        }
+
         [CanBeNull]
         public string SelectedTransactionName
         {
             get
             {
-                return (string)TransactionNames.CurrentItem;
+                return (string)GetValue(SelectedTransactionNameProperty);
             }
 
             set
             {
-                TransactionNames.MoveCurrentTo(value);
+                SetValue(SelectedTransactionNameProperty, value);
             }
         }
 
@@ -155,14 +202,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         {
             get
             {
-                var currentItem = (ControlItem<AnalysisType>)ScoreTypes.CurrentItem;
-                return currentItem == null ? default(AnalysisType?) : currentItem.Value;
+                return (AnalysisType?)GetValue(SelectedAnalysisTypeProperty);
             }
 
             set
             {
-                var item = value.HasValue ? ControlItem.Create(value.Value) : null;
-                ScoreTypes.MoveCurrentTo(item);
+                SetValue(SelectedAnalysisTypeProperty, value);
             }
         }
 
@@ -170,7 +215,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         public AsyncRelayCommand CheckPerformanceCommand
         {
             get;
-            private set;
         }
 
         #endregion
@@ -183,12 +227,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
             if (transactionNames == null)
             {
-                throw new ArgumentNullException("transactionNames");
+                throw new ArgumentNullException(nameof(transactionNames));
             }
 
             if (transactionNames.Any(item => item == null))
             {
-                throw new ArgumentException(@"The collection contains a null element.", "transactionNames");
+                throw new ArgumentException(@"The collection contains a null element.", nameof(transactionNames));
             }
 
             #endregion
@@ -204,19 +248,43 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Private Methods
 
+        private static void OnSelectedTransactionNameChanged(
+            DependencyObject obj,
+            DependencyPropertyChangedEventArgs args)
+        {
+            ((AnalysisControlViewModel)obj).OnSelectedTransactionNameChanged(args);
+        }
+
+        private static object OnCoerceSelectedTransactionName(DependencyObject obj, object baseValue)
+        {
+            return ((AnalysisControlViewModel)obj).OnCoerceSelectedTransactionName();
+        }
+
+        private static void OnSelectedAnalysisTypeChanged(
+            DependencyObject obj,
+            DependencyPropertyChangedEventArgs args)
+        {
+            ((AnalysisControlViewModel)obj).OnSelectedAnalysisTypeChanged(args);
+        }
+
+        private static object OnCoerceSelectedAnalysisType(DependencyObject obj, object baseValue)
+        {
+            return ((AnalysisControlViewModel)obj).OnCoerceSelectedAnalysisType();
+        }
+
         private static PageSpeedOutput RunTools(
             AnalysisType analysisType,
             string inputFilePath,
             string outputFilePath)
         {
-            if (analysisType != AnalysisType.Score)
+            if (analysisType != AnalysisType.ScoreByPageSpeed)
             {
                 throw analysisType.CreateEnumValueNotImplementedException();
             }
 
             var arguments = string.Format(
                 CultureInfo.InvariantCulture,
-                @"-input_file ""{0}"" -output_file ""{1}"" -output_format unformatted_json",
+                @"-input_file ""{0}"" -output_file ""{1}"" -output_format formatted_json -strategy desktop",
                 inputFilePath,
                 outputFilePath);
 
@@ -257,19 +325,46 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             return pageSpeedOutput;
         }
 
+        private void OnSelectedTransactionNameChanged(DependencyPropertyChangedEventArgs args)
+        {
+            TransactionNames.MoveCurrentTo(args.NewValue);
+        }
+
+        private object OnCoerceSelectedTransactionName()
+        {
+            return (string)TransactionNames.CurrentItem;
+        }
+
+        private void OnSelectedAnalysisTypeChanged(DependencyPropertyChangedEventArgs args)
+        {
+            var newValue = (AnalysisType?)args.NewValue;
+
+            var item = newValue.HasValue ? ControlItem.Create(newValue.Value) : null;
+            AnalysisTypes.MoveCurrentTo(item);
+        }
+
+        private object OnCoerceSelectedAnalysisType()
+        {
+            var currentItem = (ControlItem<AnalysisType>)AnalysisTypes.CurrentItem;
+            return currentItem?.Value;
+        }
+
         private void TransactionNames_CurrentChanged(object sender, EventArgs eventArgs)
         {
             CheckPerformanceCommand.RaiseCanExecuteChanged();
+            CoerceValue(SelectedTransactionNameProperty);
         }
 
-        private void ScoreTypes_CurrentChanged(object sender, EventArgs eventArgs)
+        private void AnalysisTypes_CurrentChanged(object sender, EventArgs eventArgs)
         {
             CheckPerformanceCommand.RaiseCanExecuteChanged();
+            CoerceValue(SelectedAnalysisTypeProperty);
         }
 
         private bool CanExecuteCheckPerformanceCommand(object arg)
         {
-            return SelectedAnalysisType.HasValue && !SelectedTransactionName.IsNullOrWhiteSpace();
+            return SelectedAnalysisType.HasValue && !SelectedTransactionName.IsNullOrWhiteSpace()
+                && !CheckPerformanceCommand.IsExecuting;
         }
 
         private void ExecuteCheckPerformanceCommand(object obj)
@@ -291,6 +386,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                     Environment.NewLine,
                     ex);
 
+                Dispatcher.Invoke(() => AnalysisErrorMessage = errorMessage, DispatcherPriority.Render);
                 Dispatcher.Invoke(() => AnalysisResult = errorMessage, DispatcherPriority.Render);
             }
         }
@@ -305,7 +401,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 return;
             }
 
-            Dispatcher.Invoke(() => AnalysisResult = "Analysing...", DispatcherPriority.Render);
+            Dispatcher.Invoke(() => AnalysisErrorMessage = null, DispatcherPriority.Render);
+            Dispatcher.Invoke(() => AnalysisResult = "Analyzing...", DispatcherPriority.Render);
 
             PageSpeedOutput pageSpeedOutput;
             using (var tempFileCollection = new TempFileCollection(Path.GetTempPath(), false))

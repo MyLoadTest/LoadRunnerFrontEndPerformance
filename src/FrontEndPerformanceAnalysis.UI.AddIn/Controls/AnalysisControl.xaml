@@ -4,11 +4,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:self="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn"
         xmlns:controls="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls"
+        xmlns:converters="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Converters"
         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch"
         VerticalContentAlignment="Stretch" Background="{x:Static SystemColors.ControlBrush}"
         Foreground="{x:Static SystemColors.ControlTextBrush}"
-        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="300">
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200">
     <UserControl.Resources>
         <Style x:Key="OptionControlStyle" TargetType="FrameworkElement">
             <Setter Property="Margin" Value="5,0,5,0" />
@@ -20,6 +22,11 @@
             <Setter Property="Padding" Value="5,0,5,0" />
             <Setter Property="MinWidth" Value="100" />
         </Style>
+
+        <converters:MatchedAnalysisTypeToVisibilityConverter x:Key="MatchedAnalysisTypeToVisibilityConverter"
+                MatchedValueVisibility="Visible" UnmatchedValueVisibility="Collapsed" />
+
+        <converters:ErrorMessageToVisibilityConverter x:Key="ErrorMessageToVisibilityConverter" />
     </UserControl.Resources>
 
     <UserControl.DataContext>
@@ -78,18 +85,27 @@
                     Name="TransactionNameComboBox" ItemsSource="{Binding TransactionNames}"
                     IsSynchronizedWithCurrentItem="True" />
             <ComboBox Grid.Row="1" Grid.Column="2" Style="{StaticResource OptionControlStyle}" MinWidth="100"
-                    Name="ScoreTypeComboBox" ItemsSource="{Binding ScoreTypes}" IsSynchronizedWithCurrentItem="True" />
+                    Name="ScoreTypeComboBox" ItemsSource="{Binding AnalysisTypes}" IsSynchronizedWithCurrentItem="True" />
             <Button Grid.Row="1" Grid.Column="4" Content="_Check Performance"
                     Command="{Binding CheckPerformanceCommand}" />
         </Grid>
 
         <RichTextBox Grid.Row="1" IsReadOnly="True" IsReadOnlyCaretVisible="True" HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch">
-            <FlowDocument>
+                VerticalAlignment="Stretch"
+                Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.ScoreByPageSpeed}}">
+            <FlowDocument Background="{x:Static SystemColors.ControlBrush}">
                 <Paragraph>
                     <Run Text="{Binding AnalysisResult,Mode=OneWay}" />
                 </Paragraph>
             </FlowDocument>
         </RichTextBox>
+
+        <WebBrowser Grid.Row="1" HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.Waterfall}}" />
+
+        <TextBlock Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="999"
+                Text="{Binding AnalysisErrorMessage}" Background="Pink"
+                Visibility="{Binding AnalysisErrorMessage,Converter={StaticResource ErrorMessageToVisibilityConverter}}" />
     </Grid>
 </UserControl>

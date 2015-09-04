@@ -20,3 +20,4 @@ ThumbnailsCache.tmp
 result1/
 pre_cci.c
 combined_*.c
+/src/.vs/config

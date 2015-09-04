@@ -117,13 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Enum_ScoreType_PageWeight" xml:space="preserve">
+  <data name="Enum_AnalysisType_PageWeight" xml:space="preserve">
     <value>Page weight</value>
   </data>
-  <data name="Enum_ScoreType_Score" xml:space="preserve">
-    <value>Score</value>
+  <data name="Enum_AnalysisType_ScoreByPageSpeed" xml:space="preserve">
+    <value>Score by Page Speed</value>
   </data>
-  <data name="Enum_ScoreType_Waterfall" xml:space="preserve">
+  <data name="Enum_AnalysisType_ScoreByYSlow" xml:space="preserve">
+    <value>Score by YSlow</value>
+  </data>
+  <data name="Enum_AnalysisType_Waterfall" xml:space="preserve">
     <value>Waterfall</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />

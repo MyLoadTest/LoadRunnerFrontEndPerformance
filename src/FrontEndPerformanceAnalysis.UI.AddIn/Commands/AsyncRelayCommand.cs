@@ -25,13 +25,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands
 
         #region Public Properties
 
-        public bool IsExecuting
-        {
-            get
-            {
-                return IsExecutingInternal;
-            }
-        }
+        public bool IsExecuting => IsExecutingInternal;
 
         #endregion
 

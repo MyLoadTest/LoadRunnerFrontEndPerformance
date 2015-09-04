@@ -5,8 +5,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 {
     internal enum AnalysisType
     {
-        Waterfall, 
-        PageWeight, 
-        Score
+        ScoreByPageSpeed,
+        ScoreByYSlow,
+        PageWeight,
+        Waterfall
     }
 }

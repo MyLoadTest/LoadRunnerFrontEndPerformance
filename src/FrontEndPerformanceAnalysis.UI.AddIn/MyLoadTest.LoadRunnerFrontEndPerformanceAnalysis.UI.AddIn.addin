@@ -6,6 +6,7 @@
         description="The Virtual User Generator add-in to help optimize front-end performance for websites and web applications">
     <Runtime>
         <Import assembly="Omnifactotum.dll" />
+        <Import assembly="Omnifactotum.Wpf.dll" />
         <Import assembly="MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.dll" />
     </Runtime>
 

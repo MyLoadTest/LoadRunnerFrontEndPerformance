@@ -6,27 +6,20 @@ using System.Runtime.Serialization;
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings
 {
     [DataContract]
-    [DebuggerDisplay("{Major}.{Minor} (OfficialRelease = {OfficialRelease})")]
-    internal sealed class VersionInfo
+    [DebuggerDisplay("Format = {Format}")]
+    internal sealed class FormattedString
     {
         #region Public Properties
 
-        [DataMember(Name = "major")]
-        public int Major
+        [DataMember(Name = "format")]
+        public string Format
         {
             get;
             set;
         }
 
-        [DataMember(Name = "minor")]
-        public int Minor
-        {
-            get;
-            set;
-        }
-
-        [DataMember(Name = "official_release")]
-        public bool OfficialRelease
+        [DataMember(Name = "args")]
+        public FormattedStringArg[] Args
         {
             get;
             set;
