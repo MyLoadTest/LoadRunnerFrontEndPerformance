@@ -90,22 +90,23 @@
                     Command="{Binding CheckPerformanceCommand}" />
         </Grid>
 
-        <RichTextBox Grid.Row="1" IsReadOnly="True" IsReadOnlyCaretVisible="True" HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.ScoreByPageSpeed}}">
-            <FlowDocument Background="{x:Static SystemColors.ControlBrush}">
-                <Paragraph>
-                    <Run Text="{Binding AnalysisResult,Mode=OneWay}" />
-                </Paragraph>
-            </FlowDocument>
-        </RichTextBox>
+        <Grid Grid.Row="1">
+            <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.ScoreByPageSpeed}}">
+                <FlowDocument Background="{x:Static SystemColors.ControlBrush}">
+                    <Paragraph>
+                        <Run Text="{Binding AnalysisResult,Mode=OneWay}" />
+                    </Paragraph>
+                </FlowDocument>
+            </RichTextBox>
 
-        <WebBrowser Grid.Row="1" HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.Waterfall}}" />
+            <!--<WebBrowser HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="0"
+                    Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.Waterfall}}" />-->
 
-        <TextBlock Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="999"
-                Text="{Binding AnalysisErrorMessage}" Background="Pink"
-                Visibility="{Binding AnalysisErrorMessage,Converter={StaticResource ErrorMessageToVisibilityConverter}}" />
+            <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="9999"
+                    Text="{Binding AnalysisErrorMessage}" Background="Pink"
+                    Visibility="{Binding AnalysisErrorMessage,Converter={StaticResource ErrorMessageToVisibilityConverter}}" />
+        </Grid>
     </Grid>
 </UserControl>

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 
-namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings
+namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings.PageSpeed
 {
     [DataContract]
     [DebuggerDisplay("{RuleName,nq} : {RuleImpact}{Experimental ? \" (experimental)\" : string.Empty,nq}")]

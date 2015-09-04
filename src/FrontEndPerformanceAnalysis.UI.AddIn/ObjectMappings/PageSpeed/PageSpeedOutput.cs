@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using Omnifactotum.Annotations;
 
-namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings
+namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings.PageSpeed
 {
     [DataContract]
     [DebuggerDisplay("Score = {Score}, Version = {Version}, Locale = {Locale}")]

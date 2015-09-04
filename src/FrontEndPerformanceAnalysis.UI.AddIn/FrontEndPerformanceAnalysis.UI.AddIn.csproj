@@ -85,13 +85,13 @@
     <Compile Include="Converters\MatchedValueToVisibilityConverter.cs" />
     <Compile Include="HostCommands\StartupCommand.cs" />
     <Compile Include="LocalHelper.cs" />
-    <Compile Include="ObjectMappings\FormattedStringArg.cs" />
-    <Compile Include="ObjectMappings\PageSpeedOutput.cs" />
-    <Compile Include="ObjectMappings\RuleResult.cs" />
-    <Compile Include="ObjectMappings\FormattedString.cs" />
-    <Compile Include="ObjectMappings\UrlBlock.cs" />
-    <Compile Include="ObjectMappings\UrlData.cs" />
-    <Compile Include="ObjectMappings\VersionInfo.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\FormattedStringArg.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\PageSpeedOutput.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\RuleResult.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\FormattedString.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\UrlBlock.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\UrlData.cs" />
+    <Compile Include="ObjectMappings\PageSpeed\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
