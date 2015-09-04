@@ -90,20 +90,38 @@
                     Command="{Binding CheckPerformanceCommand}" />
         </Grid>
 
-        <Grid Grid.Row="1">
-            <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"
-                    Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.ScoreByPageSpeed}}">
-                <FlowDocument Background="{x:Static SystemColors.ControlBrush}">
-                    <Paragraph>
-                        <Run Text="{Binding AnalysisResult,Mode=OneWay}" />
-                    </Paragraph>
-                </FlowDocument>
-            </RichTextBox>
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" Background="Beige">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <!--<WebBrowser HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="0"
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,5,0,5">
+                <TextBlock Text="Score:" Margin="0,0,5,0" />
+                <TextBlock Text="{Binding PageSpeedResult.Score,FallbackValue='N/A'}" FontWeight="Bold" />
+            </StackPanel>
+
+            <DataGrid Grid.Row="1" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                    CanUserReorderColumns="False" CanUserResizeColumns="True" CanUserResizeRows="False"
+                    CanUserSortColumns="False" AutoGenerateColumns="False" GridLinesVisibility="All"
+                    HeadersVisibility="Column" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    Margin="0,5,0,5"
+                    Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.ScoreByPageSpeed}}"
+                    ItemsSource="{Binding PageSpeedResult.RuleResults,Mode=OneWay}"
+                    IsSynchronizedWithCurrentItem="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Rule" MinWidth="120" Width="*" Binding="{Binding LocalizedRuleName}" />
+                    <DataGridTextColumn Header="Impact" MinWidth="100" Width="Auto" Binding="{Binding RuleImpact,StringFormat={}{0:F3}}" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <!--<WebBrowser HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                     Visibility="{Binding SelectedAnalysisType,Mode=OneWay,Converter={StaticResource MatchedAnalysisTypeToVisibilityConverter},ConverterParameter={x:Static self:AnalysisType.Waterfall}}" />-->
+        </Grid>
 
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="9999">
             <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="9999"
                     Text="{Binding AnalysisErrorMessage}" Background="Pink"
                     Visibility="{Binding AnalysisErrorMessage,Converter={StaticResource ErrorMessageToVisibilityConverter}}" />
