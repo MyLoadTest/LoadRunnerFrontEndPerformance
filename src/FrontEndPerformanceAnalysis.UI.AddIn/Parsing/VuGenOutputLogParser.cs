@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
@@ -9,6 +10,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
     internal sealed class VuGenOutputLogParser
     {
         #region Constants and Fields
+
+        private const string NameGroupName = "Name";
+        private const string StatusGroupName = "Status";
+        private const string DurationGroupName = "Duration";
+        private const string WastedTimeGroupName = "WastedTime";
+
+        private static readonly Regex TransactionStartRegex = new Regex(
+            $@"Notify: Transaction \""(?<{NameGroupName}>[^""]+)\"" started\.",
+            RegexOptions.Compiled);
+
+        private static readonly Regex TransactionEndRegex = new Regex(
+            $@"Notify: Transaction \""(?<{NameGroupName}>[^""]+)\"" ended with a \""(?<{StatusGroupName
+                }>[^""]+)\"" status \(Duration: (?<{DurationGroupName}>\d+\.?\d*|\d*\.?\d+) Wasted Time: (?<{
+                WastedTimeGroupName}>\d+\.?\d*|\d*\.?\d+)\)\.",
+            RegexOptions.Compiled);
 
         private readonly string _logPath;
 
@@ -47,7 +63,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    Debug.WriteLine(line);
+                    var match1 = TransactionStartRegex.Match(line);
+                    Debug.WriteLine(match1.Success);
+
+                    var match2 = TransactionEndRegex.Match(line);
+                    Debug.WriteLine(match2.Success);
                 }
             }
 

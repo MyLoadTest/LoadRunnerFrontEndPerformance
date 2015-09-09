@@ -19,6 +19,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
         public override void Run()
         {
             ResourceService.RegisterNeutralImages(Resources.ResourceManager);
+
+            ////var logParser = new VuGenOutputLogParser(@"D:\output.txt");
+            ////var harRoot = logParser.Parse();
+            ////Debug.WriteLine(harRoot);
         }
 
         #endregion
