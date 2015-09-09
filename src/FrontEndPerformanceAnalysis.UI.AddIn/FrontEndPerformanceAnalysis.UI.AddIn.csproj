@@ -36,7 +36,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup>
-    <RunPostBuildEvent>Always</RunPostBuildEvent>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ICSharpCode.Core">
@@ -83,6 +83,25 @@
     <Compile Include="Converters\MatchedAnalysisTypeToVisibilityConverter.cs" />
     <Compile Include="Converters\ErrorMessageToVisibilityConverter.cs" />
     <Compile Include="Converters\MatchedValueToVisibilityConverter.cs" />
+    <Compile Include="Har\HarCache.cs" />
+    <Compile Include="Har\HarCacheInfo.cs" />
+    <Compile Include="Har\HarContent.cs" />
+    <Compile Include="Har\HarCookie.cs" />
+    <Compile Include="Har\HarCreator.cs" />
+    <Compile Include="Har\HarEntry.cs" />
+    <Compile Include="Har\HarEntryTimings.cs" />
+    <Compile Include="Har\HarNameValueObject.cs" />
+    <Compile Include="Har\HarHeader.cs" />
+    <Compile Include="Har\HarLog.cs" />
+    <Compile Include="Har\HarPage.cs" />
+    <Compile Include="Har\HarPageTimings.cs" />
+    <Compile Include="Har\HarMessageBase.cs" />
+    <Compile Include="Har\HarPostData.cs" />
+    <Compile Include="Har\HarPostDataParameter.cs" />
+    <Compile Include="Har\HarRequest.cs" />
+    <Compile Include="Har\HarResponse.cs" />
+    <Compile Include="Har\HarRoot.cs" />
+    <Compile Include="Har\HarQueryStringParameter.cs" />
     <Compile Include="HostCommands\StartupCommand.cs" />
     <Compile Include="LocalHelper.cs" />
     <Compile Include="ObjectMappings\PageSpeed\FormattedStringArg.cs" />
@@ -93,6 +112,7 @@
     <Compile Include="ObjectMappings\PageSpeed\UrlData.cs" />
     <Compile Include="ObjectMappings\PageSpeed\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
+    <Compile Include="Parsing\VuGenOutputLogParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
