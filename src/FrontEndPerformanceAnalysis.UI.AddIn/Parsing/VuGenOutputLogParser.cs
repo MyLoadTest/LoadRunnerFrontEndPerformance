@@ -15,16 +15,41 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private const string StatusGroupName = "Status";
         private const string DurationGroupName = "Duration";
         private const string WastedTimeGroupName = "WastedTime";
+        private const string TimestampGroupName = "Timestamp";
+        private const string IPAddressGroupName = "IPAddress";
+        private const string PortGroupName = "Port";
+        private const string SourceEndpointGroupName = "SourceEndpoint";
+        private const string TargetEndpointGroupName = "TargetEndpoint";
+
+        private const string DecimalNumberPattern = @"\d+\.?\d*|\d*\.?\d+";
+        private const string IPAddressPattern = @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"; // IPv4 only so far
+        private const string PortPattern = @"\d+";
+
+        private const string FileAndPositionPrefixPattern = @"^[^\(]+\(\d+\):";
+
+        private static readonly string IPAddressAndPortPattern = $@"{IPAddressPattern}\:{PortPattern}";
+
+        private static readonly Regex IPEndPointRegex = new Regex(
+            $@"(?<{IPAddressGroupName}>{IPAddressPattern})\:(?<{PortGroupName}>{PortPattern})",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         private static readonly Regex TransactionStartRegex = new Regex(
-            $@"Notify: Transaction \""(?<{NameGroupName}>[^""]+)\"" started\.",
-            RegexOptions.Compiled);
+            $@"{FileAndPositionPrefixPattern} Notify\: Transaction \""(?<{NameGroupName}>[^""]+)\"" started\.$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         private static readonly Regex TransactionEndRegex = new Regex(
-            $@"Notify: Transaction \""(?<{NameGroupName}>[^""]+)\"" ended with a \""(?<{StatusGroupName
-                }>[^""]+)\"" status \(Duration: (?<{DurationGroupName}>\d+\.?\d*|\d*\.?\d+) Wasted Time: (?<{
-                WastedTimeGroupName}>\d+\.?\d*|\d*\.?\d+)\)\.",
-            RegexOptions.Compiled);
+            $@"{FileAndPositionPrefixPattern} Notify\: Transaction \""(?<{NameGroupName
+                }>[^""]+)\"" ended with a \""(?<{StatusGroupName
+                }>[^""]+)\"" status \(Duration: (?<{DurationGroupName}>{DecimalNumberPattern}) Wasted Time: (?<{
+                WastedTimeGroupName}>{DecimalNumberPattern})\)\.$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
+        private static readonly Regex ConnectedSocketRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Connected socket \[\d+\] from (?<{
+                SourceEndpointGroupName}>{
+                IPAddressAndPortPattern}) to (?<{TargetEndpointGroupName}>{IPAddressAndPortPattern}) in (?<{
+                DurationGroupName}>\d+) ms\s+\[MsgId\: MMSG\-\d+\]$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         private readonly string _logPath;
 
@@ -68,6 +93,18 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
                     var match2 = TransactionEndRegex.Match(line);
                     Debug.WriteLine(match2.Success);
+
+                    var match3 = ConnectedSocketRegex.Match(line);
+                    Debug.WriteLine(match3.Success);
+
+                    if (match3.Success)
+                    {
+                        var sourceEndpointMatch = IPEndPointRegex.Match(match3.Groups[SourceEndpointGroupName].Value);
+                        Debug.WriteLine(sourceEndpointMatch.Success);
+
+                        var targetEndpointMatch = IPEndPointRegex.Match(match3.Groups[TargetEndpointGroupName].Value);
+                        Debug.WriteLine(targetEndpointMatch.Success);
+                    }
                 }
             }
 
