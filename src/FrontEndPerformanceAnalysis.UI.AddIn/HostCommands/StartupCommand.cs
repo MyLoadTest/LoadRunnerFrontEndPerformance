@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using ICSharpCode.Core;
+////using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
@@ -21,8 +22,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
             ResourceService.RegisterNeutralImages(Resources.ResourceManager);
 
             ////var logParser = new VuGenOutputLogParser(@"D:\output.txt");
-            ////var harRoot = logParser.Parse();
-            ////Debug.WriteLine(harRoot);
+            ////var transactionInfos = logParser.Parse();
+            ////Debug.WriteLine(transactionInfos.Length);
         }
 
         #endregion

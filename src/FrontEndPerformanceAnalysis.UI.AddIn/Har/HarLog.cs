@@ -7,6 +7,24 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
     [DataContract]
     internal sealed class HarLog
     {
+        #region Constants and Fields
+
+        public static readonly string DefaultHarVersion = "1.2";
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="HarLog"/> class.
+        /// </summary>
+        public HarLog()
+        {
+            Version = DefaultHarVersion;
+        }
+
+        #endregion
+
         #region Public Properties
 
         [DataMember(Name = "version")]
