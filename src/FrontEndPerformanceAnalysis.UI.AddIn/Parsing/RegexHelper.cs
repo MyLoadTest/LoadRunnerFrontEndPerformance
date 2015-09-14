@@ -8,24 +8,47 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
     {
         #region Public Methods
 
-        public static T EnsureSucceeded<T>([NotNull] this T obj)
-            where T : Group
+        [NotNull]
+        public static Group GetSucceeded(
+            [NotNull] this GroupCollection groupCollection,
+            [NotNull] string groupName)
         {
             #region Argument Check
 
-            if (obj == null)
+            if (groupCollection == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(groupCollection));
+            }
+
+            if (groupName == null)
+            {
+                throw new ArgumentNullException(nameof(groupName));
             }
 
             #endregion
 
-            if (!obj.Success)
+            var group = groupCollection[groupName].EnsureNotNull();
+            if (!group.Success)
             {
-                throw new InvalidOperationException("The specified group was supposed to succeed.");
+                throw new InvalidOperationException($"The group '{groupName}' was supposed to succeed.");
             }
 
-            return obj;
+            return group;
+        }
+
+        [NotNull]
+        public static Match MatchAgainst([CanBeNull] this string input, [NotNull] Regex regex)
+        {
+            #region Argument Check
+
+            if (regex == null)
+            {
+                throw new ArgumentNullException(nameof(regex));
+            }
+
+            #endregion
+
+            return input == null ? Match.Empty : regex.Match(input).EnsureNotNull();
         }
 
         #endregion

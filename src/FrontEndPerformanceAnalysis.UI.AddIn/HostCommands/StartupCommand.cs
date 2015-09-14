@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using ICSharpCode.Core;
-////using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
@@ -21,9 +22,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
         {
             ResourceService.RegisterNeutralImages(Resources.ResourceManager);
 
-            ////var logParser = new VuGenOutputLogParser(@"D:\output.txt");
-            ////var transactionInfos = logParser.Parse();
-            ////Debug.WriteLine(transactionInfos.Length);
+            //// [vitalii.maklai] Temporary code for debugging the output log parser
+            const string LogPath = @"D:\output.txt";
+            if (File.Exists(LogPath))
+            {
+                var logParser = new VuGenOutputLogParser(LogPath);
+                var transactionInfos = logParser.Parse();
+                Trace.WriteLine(transactionInfos.Length);
+            }
         }
 
         #endregion
