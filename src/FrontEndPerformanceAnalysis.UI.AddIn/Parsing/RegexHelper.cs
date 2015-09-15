@@ -9,9 +9,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         #region Public Methods
 
         [NotNull]
-        public static Group GetSucceeded(
-            [NotNull] this GroupCollection groupCollection,
-            [NotNull] string groupName)
+        public static Group GetSucceeded([NotNull] this GroupCollection groupCollection, [NotNull] string groupName)
         {
             #region Argument Check
 
@@ -34,6 +32,27 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
 
             return group;
+        }
+
+        [NotNull]
+        public static Group GetSucceededGroup([NotNull] this Match match, [NotNull] string groupName)
+        {
+            #region Argument Check
+
+            if (match == null)
+            {
+                throw new ArgumentNullException(nameof(match));
+            }
+
+            #endregion
+
+            return match.Groups.GetSucceeded(groupName);
+        }
+
+        [NotNull]
+        public static string GetSucceededGroupValue([NotNull] this Match match, [NotNull] string groupName)
+        {
+            return match.GetSucceededGroup(groupName).Value.EnsureNotNull();
         }
 
         [NotNull]

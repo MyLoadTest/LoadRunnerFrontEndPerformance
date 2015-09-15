@@ -65,7 +65,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private static readonly Regex RequestHeadersMarkerRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: (?<{SizeGroupName
                 }>\d+)-byte request headers for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
-                }>\d+)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
+                }>\d*)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         private static readonly Regex HttpRequestLineRegex = new Regex(
@@ -105,21 +105,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         #endregion
 
-        #region ParsingState Enumeration
-
-        private enum ParsingState
-        {
-            Initial,
-            TransactionStarted,
-            ConnectionOpened,
-            RequestHeadersSectionStartedExpectingRequestLine,
-            RequestHeadersSectionStartedExpectingHeaders,
-            RequestHeadersSectionEnded,
-            RequestBodySectionStarted, //// TODO [vmcl] RequestBodySectionStarted (eg. for POST request)
-        }
-
-        #endregion
-
         #region Public Methods
 
         public TransactionInfo[] Parse()
@@ -133,13 +118,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             using (var reader = new StreamReader(_logPath))
             {
-                var parsingState = ParsingState.Initial;
                 TransactionInfo transactionInfo = null;
-                var pageId = 0;
+                var pageUniqueId = 0;
+                var implicitTransactionUniqueId = 0;
                 List<HarPage> harPages = null;
                 List<HarEntry> harEntries = null;
-                HarPage harPage;
-                HarEntry harEntry = null;
+                Dictionary<long, HarEntry> internalIdToHarEntryMap = null;
+                HarPage harPage = null;
 
                 string rawLine = null;
                 string line = null;
@@ -175,186 +160,196 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                         return true;
                     };
 
-                //// TODO [vmcl] Consider async request/responses
+                Func<bool> commitTransaction =
+                    () =>
+                    {
+                        // ReSharper disable once AccessToModifiedClosure - As designed
+                        if (transactionInfo == null)
+                        {
+                            return false;
+                        }
+
+                        // ReSharper disable once AccessToModifiedClosure - As designed
+                        var harLog = transactionInfo.HarRoot.EnsureNotNull().Log.EnsureNotNull();
+
+                        harLog.Pages = harPages.EnsureNotNull().ToArray();
+                        harLog.Entries = harEntries.EnsureNotNull().ToArray();
+
+                        // ReSharper disable once AccessToModifiedClosure - As designed
+                        transactionInfos.Add(transactionInfo);
+
+                        transactionInfo = null;
+                        harPages = null;
+                        harEntries = null;
+                        internalIdToHarEntryMap = null;
+
+                        return true;
+                    };
+
+                Func<string, TransactionInfo> createTransactionInfo =
+                    name =>
+                    {
+                        var result = new TransactionInfo(name)
+                        {
+                            HarRoot =
+                            {
+                                Log = new HarLog
+                                {
+                                    Creator = new HarCreator
+                                    {
+                                        Name = GetType().GetFullName(),
+                                        Version = GetType().Assembly.GetName().Version.ToString()
+                                    }
+                                }
+                            }
+                        };
+
+                        harPages = new List<HarPage>();
+                        harEntries = new List<HarEntry>();
+                        internalIdToHarEntryMap = new Dictionary<long, HarEntry>();
+
+                        return result;
+                    };
+
+                Func<TransactionInfo> createImplicitTransactionInfo =
+                    () =>
+                    {
+                        implicitTransactionUniqueId++;
+                        var name = $"Implicit transaction {implicitTransactionUniqueId}";
+                        return createTransactionInfo(name);
+                    };
+
+                Func<TransactionInfo> ensureTransactionInfo =
+                    () => transactionInfo ?? (transactionInfo = createImplicitTransactionInfo());
 
                 //// ReSharper disable once LoopVariableIsNeverChangedInsideLoop - False positive
                 while (fetchLine())
                 {
-                    switch (parsingState)
-                    {
-                        case ParsingState.Initial:
-                            {
-                                var transactionStartMatch = TransactionStartRegex.Match(line);
-                                if (!transactionStartMatch.Success)
-                                {
-                                    continue;
-                                }
-
-                                var name = transactionStartMatch.Groups.GetSucceeded(NameGroupName).Value;
-
-                                transactionInfo = new TransactionInfo(name, transactionInfos.Count + 1)
-                                {
-                                    HarRoot =
-                                    {
-                                        Log = new HarLog
-                                        {
-                                            Creator = new HarCreator
-                                            {
-                                                Name = GetType().GetFullName(),
-                                                Version = GetType().Assembly.GetName().Version.ToString()
-                                            }
-                                        }
-                                    }
-                                };
-
-                                harPages = new List<HarPage>();
-                                harEntries = new List<HarEntry>();
-
-                                parsingState = ParsingState.TransactionStarted;
-                                continue;
-                            }
-
-                        case ParsingState.TransactionStarted:
-                            {
-                                var connectedSocketMatch = ConnectedSocketRegex.Match(line);
-                                if (connectedSocketMatch.Success)
-                                {
-                                    var sourceEndpointMatch =
-                                        IPEndPointRegex.Match(
-                                            connectedSocketMatch.Groups.GetSucceeded(SourceEndpointGroupName).Value);
-
-                                    var targetEndpointMatch =
-                                        IPEndPointRegex.Match(
-                                            connectedSocketMatch.Groups.GetSucceeded(TargetEndpointGroupName).Value);
-
-                                    Debug.WriteLine(sourceEndpointMatch.Value);
-                                    Debug.WriteLine(targetEndpointMatch.Value);
-
-                                    parsingState = ParsingState.ConnectionOpened;
-                                    continue;
-                                }
-                            }
-
-                            break;
-
-                        case ParsingState.ConnectionOpened:
-                            {
-                                var requestHeadersMarkerMatch = RequestHeadersMarkerRegex.Match(line);
-                                if (requestHeadersMarkerMatch.Success)
-                                {
-                                    var url = requestHeadersMarkerMatch.Groups.GetSucceeded(UrlGroupName).Value;
-
-                                    var sizeString =
-                                        requestHeadersMarkerMatch.Groups.GetSucceeded(SizeGroupName).Value;
-
-                                    var size = long.Parse(
-                                        sizeString,
-                                        NumberStyles.Integer,
-                                        CultureInfo.InvariantCulture);
-
-                                    harPage = new HarPage
-                                    {
-                                        Id = $"page_{++pageId}",
-                                        Title = url
-                                    };
-
-                                    harPages.EnsureNotNull().Add(harPage);
-
-                                    harEntry = new HarEntry
-                                    {
-                                        PageRef = harPage.Id,
-                                        ////ConnectionId = //// TODO [vmcl] ConnectionId = Port of SourceEndpointGroupName
-                                        ////ServerIPAddress =  //// TODO [vmcl] ConnectionId = From TargetEndpointGroupName
-                                        Request = new HarRequest { HeadersSize = size, Url = url }
-                                    };
-
-                                    harEntries.EnsureNotNull().Add(harEntry);
-
-                                    parsingState = ParsingState.RequestHeadersSectionStartedExpectingRequestLine;
-                                    continue;
-                                }
-                            }
-
-                            break;
-
-                        case ParsingState.RequestHeadersSectionStartedExpectingRequestLine:
-                            {
-                                var match = HttpRequestLineRegex.Match(line);
-                                if (!match.Success)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"An HTTP Request-Line was expected at line {lineIndex}.");
-                                }
-
-                                var httpMethod = match.Groups.GetSucceeded(HttpMethodGroupName).Value;
-                                var httpVersion = match.Groups.GetSucceeded(HttpVersionGroupName).Value;
-
-                                var harRequest = harEntry.EnsureNotNull().Request.EnsureNotNull();
-                                harRequest.Method = httpMethod;
-                                harRequest.HttpVersion = httpVersion;
-
-                                parsingState = ParsingState.RequestHeadersSectionStartedExpectingHeaders;
-                                continue;
-                            }
-
-                        case ParsingState.RequestHeadersSectionStartedExpectingHeaders:
-                            {
-                                var harHeaders = new List<HarHeader>();
-                                while (true)
-                                {
-                                    var headerMatch = HttpHeaderRegex.Match(line);
-                                    if (!headerMatch.Success)
-                                    {
-                                        break;
-                                    }
-
-                                    var name = headerMatch.Groups.GetSucceeded(NameGroupName).Value;
-                                    var value = headerMatch.Groups.GetSucceeded(ValueGroupName).Value;
-                                    var harHeader = new HarHeader { Name = name, Value = value };
-                                    harHeaders.Add(harHeader);
-
-                                    if (!fetchLine())
-                                    {
-                                        break;
-                                    }
-                                }
-
-                                harEntry.EnsureNotNull().Request.EnsureNotNull().Headers = harHeaders.ToArray();
-
-                                if (!line.MatchAgainst(HttpHeaderEndedRegex).Success)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"The HTTP headers ended prematurely at line {lineIndex}.");
-                                }
-
-                                parsingState = ParsingState.RequestHeadersSectionEnded;
-                                continue;
-                            }
-
-                        case ParsingState.RequestHeadersSectionEnded:
-                            //// TODO [vmcl] Implement case ParsingState.RequestHeadersSectionEnded
-                            break;
-
-                        default:
-                            throw parsingState.CreateEnumValueNotImplementedException();
-                    }
-
-                    var transactionEndMatch = TransactionEndRegex.Match(line);
+                    var transactionEndMatch = line.MatchAgainst(TransactionEndRegex);
                     if (transactionEndMatch.Success)
                     {
-                        if (transactionInfo != null)
-                        {
-                            var harLog = transactionInfo.HarRoot.Log;
-                            harLog.Pages = harPages.EnsureNotNull().ToArray();
-                            harLog.Entries = harEntries.EnsureNotNull().ToArray();
+                        commitTransaction();
+                        continue;
+                    }
 
-                            transactionInfos.Add(transactionInfo);
-                            transactionInfo = null;
+                    var transactionStartMatch = line.MatchAgainst(TransactionStartRegex);
+                    if (transactionStartMatch.Success)
+                    {
+                        commitTransaction();
+
+                        var name = transactionStartMatch.GetSucceededGroupValue(NameGroupName);
+                        transactionInfo = createTransactionInfo(name);
+                        continue;
+                    }
+
+                    var connectedSocketMatch = line.MatchAgainst(ConnectedSocketRegex);
+                    if (connectedSocketMatch.Success)
+                    {
+                        var sourceEndpointMatch =
+                            IPEndPointRegex.Match(
+                                connectedSocketMatch.GetSucceededGroupValue(SourceEndpointGroupName));
+
+                        var targetEndpointMatch =
+                            IPEndPointRegex.Match(
+                                connectedSocketMatch.GetSucceededGroupValue(TargetEndpointGroupName));
+
+                        Debug.WriteLine(sourceEndpointMatch.Value);
+                        Debug.WriteLine(targetEndpointMatch.Value);
+
+                        fetchLine();
+                        var requestHeadersMarkerMatch = line.MatchAgainst(RequestHeadersMarkerRegex);
+                        if (!requestHeadersMarkerMatch.Success)
+                        {
+                            throw new InvalidOperationException($"Request header was expected at line {lineIndex}.");
                         }
 
-                        parsingState = ParsingState.Initial;
-                        ////continue;
+                        var url = requestHeadersMarkerMatch.GetSucceededGroupValue(UrlGroupName);
+                        var size = ParseLong(requestHeadersMarkerMatch.GetSucceededGroupValue(SizeGroupName));
+
+                        var frameId =
+                            ParseNullableLong(requestHeadersMarkerMatch.GetSucceededGroupValue(FrameIdGroupName));
+
+                        var internalId =
+                            ParseLong(requestHeadersMarkerMatch.GetSucceededGroupValue(InternalIdGroupName));
+
+                        ensureTransactionInfo();
+
+                        if (frameId.HasValue || harPage == null)
+                        {
+                            harPage = new HarPage
+                            {
+                                Id = $"page_{++pageUniqueId}",
+                                Title = url
+                            };
+
+                            harPages.EnsureNotNull().Add(harPage);
+                        }
+
+                        var harRequest = new HarRequest
+                        {
+                            HeadersSize = size,
+                            Url = url
+                        };
+
+                        var harEntry = new HarEntry
+                        {
+                            PageRef = harPage.Id,
+                            ////ConnectionId = //// TODO [vmcl] ConnectionId = Port of SourceEndpointGroupName
+                            ////ServerIPAddress =  //// TODO [vmcl] ConnectionId = From TargetEndpointGroupName
+                            Request = harRequest
+                        };
+
+                        harEntries.EnsureNotNull().Add(harEntry);
+                        internalIdToHarEntryMap.Add(internalId, harEntry);
+
+                        fetchLine();
+                        var httpRequestLineMatch = line.MatchAgainst(HttpRequestLineRegex);
+                        if (!httpRequestLineMatch.Success)
+                        {
+                            //// TODO [vmcl] VuGen output may contain Request-Line carried over to a few lines
+
+                            throw new InvalidOperationException(
+                                $"An HTTP Request-Line was expected at line {lineIndex}.");
+                        }
+
+                        harRequest.Method = httpRequestLineMatch.GetSucceededGroupValue(HttpMethodGroupName);
+                        harRequest.HttpVersion = httpRequestLineMatch.GetSucceededGroupValue(HttpVersionGroupName);
+
+                        var harHeaders = new List<HarHeader>();
+
+                        //// ReSharper disable LoopVariableIsNeverChangedInsideLoop - False positive
+                        while (fetchLine())
+                        {
+                            //// ReSharper restore LoopVariableIsNeverChangedInsideLoop
+
+                            var headerMatch = line.MatchAgainst(HttpHeaderRegex);
+                            if (!headerMatch.Success)
+                            {
+                                break;
+                            }
+
+                            var name = headerMatch.GetSucceededGroupValue(NameGroupName);
+                            var value = headerMatch.GetSucceededGroupValue(ValueGroupName);
+                            var harHeader = new HarHeader { Name = name, Value = value };
+                            harHeaders.Add(harHeader);
+                        }
+
+                        harRequest.Headers = harHeaders.ToArray();
+
+                        if (!line.MatchAgainst(HttpHeaderEndedRegex).Success)
+                        {
+                            throw new InvalidOperationException(
+                                $"The HTTP headers ended prematurely at line {lineIndex}.");
+                        }
+
+                        continue;
                     }
+
+                    //// TODO [vmcl] Parse request body
+                    //// TODO [vmcl] Parse response headers
+                    //// TODO [vmcl] Parse response body
+
+                    Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {rawLine}");
                 }
             }
 
@@ -368,6 +363,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private static string NormalizeOutputLogString(string value)
         {
             return value?.Replace(@"\r\n", "\r\n");
+        }
+
+        private static long? ParseNullableLong(string value)
+        {
+            return value.IsNullOrEmpty() ? default(long?) : ParseLong(value);
+        }
+
+        private static long ParseLong(string value)
+        {
+            return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         #endregion

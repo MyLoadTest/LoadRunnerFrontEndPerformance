@@ -6,12 +6,12 @@ using Omnifactotum.Annotations;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 {
-    [DebuggerDisplay("{GetType().Name,nq}: Name = {Name}, Index = {Index}")]
+    [DebuggerDisplay("{GetType().Name,nq}: Name = {Name}")]
     internal sealed class TransactionInfo
     {
         #region Constructors
 
-        public TransactionInfo(string name, long index)
+        public TransactionInfo(string name)
         {
             #region Argument Check
 
@@ -22,18 +22,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     nameof(name));
             }
 
-            if (index <= 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    @"The value must be positive.");
-            }
-
             #endregion
 
             Name = name;
-            Index = index;
             HarRoot = new HarRoot();
         }
 
@@ -43,12 +34,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         [NotNull]
         public string Name
-        {
-            get;
-            private set;
-        }
-
-        public long Index
         {
             get;
             private set;
