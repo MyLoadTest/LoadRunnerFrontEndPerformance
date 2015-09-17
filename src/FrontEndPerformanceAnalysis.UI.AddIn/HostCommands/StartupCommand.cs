@@ -26,8 +26,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
             const string LogPath = @"D:\output.txt";
             if (File.Exists(LogPath))
             {
-                var logParser = new VuGenOutputLogParser(LogPath);
-                var transactionInfos = logParser.Parse();
+                TransactionInfo[] transactionInfos;
+                using (var logParser = new VuGenOutputLogParser(LogPath))
+                {
+                    transactionInfos = logParser.Parse();
+                }
+
                 Trace.WriteLine(transactionInfos.Length);
             }
         }

@@ -112,7 +112,7 @@
     <Compile Include="ObjectMappings\PageSpeed\UrlData.cs" />
     <Compile Include="ObjectMappings\PageSpeed\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
-    <Compile Include="Parsing\RegexHelper.cs" />
+    <Compile Include="Parsing\ParsingHelper.cs" />
     <Compile Include="Parsing\TransactionInfo.cs" />
     <Compile Include="Parsing\VuGenOutputLogParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
