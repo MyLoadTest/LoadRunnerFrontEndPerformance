@@ -27,7 +27,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private List<HarEntry> _harEntries;
         private Dictionary<long, HarEntry> _internalIdToHarEntryMap;
         private HarPage _harPage;
-        private string _rawLine;
         private string _line;
         private int _lineIndex;
         private bool _skipFetchOnce;
@@ -95,11 +94,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         #region Private Methods
 
-        private static string NormalizeOutputLogString(string value)
-        {
-            return value?.Replace(@"\r\n", "\r\n");
-        }
-
         private static long? ParseNullableLong(string value)
         {
             return value.IsNullOrEmpty() ? default(long?) : ParseLong(value);
@@ -129,17 +123,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 }
 
                 _skipFetchOnce = false;
-                return _rawLine != null;
+                return _line != null;
             }
 
-            _rawLine = _reader.ReadLine();
-            if (_rawLine == null)
+            _line = _reader.ReadLine();
+            if (_line == null)
             {
-                _line = null;
                 return false;
             }
 
-            _line = NormalizeOutputLogString(_rawLine);
             _lineIndex++;
 
             return true;
@@ -157,7 +149,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             {
                 endLineIndex = _lineIndex;
 
-                var multilineMatch = _rawLine.MatchAgainst(ParsingHelper.MultiLineRegex);
+                var multilineMatch = _line.MatchAgainst(ParsingHelper.MultiLineRegex);
                 if (!multilineMatch.Success)
                 {
                     _skipFetchOnce = true;
@@ -246,7 +238,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             _internalIdToHarEntryMap = null;
             _harPage = null;
 
-            _rawLine = null;
             _line = null;
             _lineIndex = 0;
             _skipFetchOnce = false;
@@ -375,7 +366,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 //// TODO [vmcl] Parse response headers
                 //// TODO [vmcl] Parse response body
 
-                Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_rawLine}");
+                Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_line}");
             }
         }
 
