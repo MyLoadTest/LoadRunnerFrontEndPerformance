@@ -240,16 +240,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 var connectedSocketMatch = _line.MatchAgainst(ParsingHelper.ConnectedSocketRegex);
                 if (connectedSocketMatch.Success)
                 {
-                    var sourceEndpointMatch = connectedSocketMatch
+                    var sourceEndpoint = connectedSocketMatch
                         .GetSucceededGroupValue(ParsingHelper.SourceEndpointGroupName)
-                        .MatchAgainst(ParsingHelper.IPEndPointRegex);
+                        .ParseEndPoint();
 
-                    var targetEndpointMatch = connectedSocketMatch
+                    var targetEndpoint = connectedSocketMatch
                         .GetSucceededGroupValue(ParsingHelper.TargetEndpointGroupName)
-                        .MatchAgainst(ParsingHelper.IPEndPointRegex);
-
-                    Debug.WriteLine(sourceEndpointMatch.Value);
-                    Debug.WriteLine(targetEndpointMatch.Value);
+                        .ParseEndPoint();
 
                     FetchLine();
                     var requestHeadersMarkerMatch = _line.MatchAgainst(ParsingHelper.RequestHeadersMarkerRegex);
@@ -291,8 +288,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     var harEntry = new HarEntry
                     {
                         PageRef = _harPage.Id,
-                        ////ConnectionId = //// TODO [vmcl] ConnectionId = Port of SourceEndpointGroupName
-                        ////ServerIPAddress =  //// TODO [vmcl] ConnectionId = From TargetEndpointGroupName
+                        ConnectionId = sourceEndpoint.Port.ToString(CultureInfo.InvariantCulture),
+                        ServerIPAddress = targetEndpoint.Address.ToString(),
                         Request = harRequest
                     };
 

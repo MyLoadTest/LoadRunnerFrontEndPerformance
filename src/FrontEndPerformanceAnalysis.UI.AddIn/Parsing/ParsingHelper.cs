@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Globalization;
+using System.Net;
 using System.Text.RegularExpressions;
 using Omnifactotum.Annotations;
 
@@ -141,6 +143,36 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             #endregion
 
             return input == null ? Match.Empty : regex.Match(input).EnsureNotNull();
+        }
+
+        [NotNull]
+        public static IPEndPoint ParseEndPoint([NotNull] this string input)
+        {
+            #region Argument Check
+
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            #endregion
+
+            var match = input.MatchAgainst(IPEndPointRegex);
+            if (!match.Success)
+            {
+                throw new ArgumentException(
+                    $"The input string \"{input}\" does not represent a valid IP endpoint.",
+                    nameof(input));
+            }
+
+            var ipAddressString = match.GetSucceededGroupValue(IPAddressGroupName);
+            var portString = match.GetSucceededGroupValue(PortGroupName);
+
+            var ipAddress = IPAddress.Parse(ipAddressString);
+            var port = int.Parse(portString, NumberStyles.Integer, CultureInfo.InvariantCulture);
+
+            var result = new IPEndPoint(ipAddress, port);
+            return result;
         }
 
         #endregion

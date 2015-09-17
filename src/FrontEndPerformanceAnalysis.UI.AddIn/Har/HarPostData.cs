@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
 {
     [DataContract]
+    [DebuggerDisplay("{GetType().Name,nq}. MimeType = {MimeType}")]
     internal sealed class HarPostData
     {
         #region Public Properties

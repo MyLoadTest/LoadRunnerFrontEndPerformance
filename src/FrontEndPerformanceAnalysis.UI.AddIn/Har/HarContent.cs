@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
 {
     [DataContract]
+    [DebuggerDisplay(
+        "{GetType().Name,nq}. MimeType = {MimeType}, Size = {Size}"
+            + ", SavedByCompression = {SavedByCompression}")]
     internal sealed class HarContent
     {
         #region Public Properties
