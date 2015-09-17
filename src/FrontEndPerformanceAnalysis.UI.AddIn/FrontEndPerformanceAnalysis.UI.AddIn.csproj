@@ -51,8 +51,8 @@
       <HintPath>..\packages\Omnifactotum.0.3.0.119\lib\net40-Client\Omnifactotum.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Omnifactotum.Wpf, Version=0.1.0.1, Culture=neutral, PublicKeyToken=3f9b8ca52e9bd6cf, processorArchitecture=MSIL">
-      <HintPath>..\packages\Omnifactotum.Wpf.0.1.0.1\lib\net40-Client\Omnifactotum.Wpf.dll</HintPath>
+    <Reference Include="Omnifactotum.Wpf, Version=0.1.0.4, Culture=neutral, PublicKeyToken=3f9b8ca52e9bd6cf, processorArchitecture=MSIL">
+      <HintPath>..\packages\Omnifactotum.Wpf.0.1.0.4\lib\net40-Client\Omnifactotum.Wpf.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

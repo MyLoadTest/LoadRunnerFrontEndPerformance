@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Text;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har;
 using Omnifactotum;
+using Omnifactotum.Annotations;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 {
@@ -141,6 +145,36 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             return true;
         }
 
+        [NotNull]
+        private MultilineString FetchMultipleLines()
+        {
+            var stringBuilder = new StringBuilder();
+
+            var startLineIndex = _lineIndex + 1;
+
+            int? endLineIndex = null;
+            while (FetchLine())
+            {
+                endLineIndex = _lineIndex;
+
+                var multilineMatch = _rawLine.MatchAgainst(ParsingHelper.MultiLineRegex);
+                if (!multilineMatch.Success)
+                {
+                    _skipFetchOnce = true;
+                    break;
+                }
+
+                var value = multilineMatch.GetSucceededGroupValue(ParsingHelper.ValueGroupName);
+                stringBuilder.Append(value);
+            }
+
+            return endLineIndex.HasValue
+                ? new MultilineString(
+                    stringBuilder.ToString(),
+                    ValueRange.Create(startLineIndex, endLineIndex.Value))
+                : new MultilineString(null, ValueRange.Create(startLineIndex, startLineIndex));
+        }
+
         private void CommitTransactionIfPending()
         {
             if (_transactionInfo == null)
@@ -217,7 +251,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             _lineIndex = 0;
             _skipFetchOnce = false;
 
-            //// ReSharper disable once LoopVariableIsNeverChangedInsideLoop - False positive
             while (FetchLine())
             {
                 var transactionEndMatch = _line.MatchAgainst(ParsingHelper.TransactionEndRegex);
@@ -296,14 +329,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     _harEntries.EnsureNotNull().Add(harEntry);
                     _internalIdToHarEntryMap.EnsureNotNull().Add(internalId, harEntry);
 
-                    FetchLine();
-                    var httpRequestLineMatch = _line.MatchAgainst(ParsingHelper.HttpRequestLineRegex);
+                    var multilineString = FetchMultipleLines();
+
+                    var requestLineString = multilineString.Lines.FirstOrDefault();
+                    var httpRequestLineMatch = requestLineString.MatchAgainst(ParsingHelper.HttpRequestLineRegex);
                     if (!httpRequestLineMatch.Success)
                     {
-                        //// TODO [vmcl] VuGen output may contain Request-Line carried over to a few lines
-
                         throw new InvalidOperationException(
-                            $"An HTTP Request-Line was expected at line {_lineIndex}.");
+                            $"An HTTP Request-Line was expected at line {multilineString.LineIndexRange.Lower}.");
                     }
 
                     harRequest.Method = httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpMethodGroupName);
@@ -311,16 +344,20 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                         httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpVersionGroupName);
 
                     var harHeaders = new List<HarHeader>();
-
-                    //// ReSharper disable LoopVariableIsNeverChangedInsideLoop - False positive
-                    while (FetchLine())
+                    for (var index = 1; index < multilineString.Lines.Count; index++)
                     {
-                        //// ReSharper restore LoopVariableIsNeverChangedInsideLoop
+                        var line = multilineString.Lines[index];
+                        if (line.IsNullOrEmpty())
+                        {
+                            continue;
+                        }
 
-                        var headerMatch = _line.MatchAgainst(ParsingHelper.HttpHeaderRegex);
+                        var headerMatch = line.MatchAgainst(ParsingHelper.HttpHeaderRegex);
                         if (!headerMatch.Success)
                         {
-                            break;
+                            throw new InvalidOperationException(
+                                $@"An HTTP Request-Line and Headers are expected at lines {
+                                    multilineString.LineIndexRange.Lower}-{multilineString.LineIndexRange.Upper}.");
                         }
 
                         var name = headerMatch.GetSucceededGroupValue(ParsingHelper.NameGroupName);
@@ -331,12 +368,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
                     harRequest.Headers = harHeaders.ToArray();
 
-                    if (!_line.MatchAgainst(ParsingHelper.HttpHeaderEndedRegex).Success)
-                    {
-                        throw new InvalidOperationException(
-                            $"The HTTP headers ended prematurely at line {_lineIndex}.");
-                    }
-
                     continue;
                 }
 
@@ -345,6 +376,60 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 //// TODO [vmcl] Parse response body
 
                 Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_rawLine}");
+            }
+        }
+
+        #endregion
+
+        #region MultilineString Class
+
+        [DebuggerDisplay(
+            "{GetType().Name,nq}. LineIndexRange = {LineIndexRange.ToString()}"
+                + ", Lines.Count = {Lines?.Count}")]
+        private sealed class MultilineString
+        {
+            public MultilineString([CanBeNull] string value, ValueRange<int> lineIndexRange)
+            {
+                Lines = SplitIntoLines(value).AsReadOnly();
+                LineIndexRange = lineIndexRange;
+            }
+
+            [NotNull]
+            public ReadOnlyCollection<string> Lines
+            {
+                get;
+            }
+
+            public ValueRange<int> LineIndexRange
+            {
+                get;
+            }
+
+            private static string[] SplitIntoLines([CanBeNull] string value)
+            {
+                if (value == null)
+                {
+                    return new string[0];
+                }
+
+                if (value == string.Empty)
+                {
+                    return string.Empty.AsArray();
+                }
+
+                var unescapedValue = value.UnescapeLogString();
+
+                var lines = new List<string>();
+                using (var stringReader = new StringReader(unescapedValue))
+                {
+                    string line;
+                    while ((line = stringReader.ReadLine()) != null)
+                    {
+                        lines.Add(line);
+                    }
+                }
+
+                return lines.ToArray();
             }
         }
 

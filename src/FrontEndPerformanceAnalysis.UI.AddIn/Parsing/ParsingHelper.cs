@@ -65,18 +65,18 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 }>\d*)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
+        public static readonly Regex MultiLineRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern}\s{{5}}(?<{ValueGroupName}>.*)$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
         public static readonly Regex HttpRequestLineRegex = new Regex(
-            $@"{FileAndPositionPrefixPattern}\s{{5}}(?<{HttpMethodGroupName}>{HttpRequestLineElementPattern})\s+(?<{
+            $@"^(?<{HttpMethodGroupName}>{HttpRequestLineElementPattern})\s+(?<{
                 UrlGroupName}>{HttpRequestLineElementPattern})\s+HTTP/(?<{HttpVersionGroupName}>{
                 HttpRequestLineVersionPattern})\s*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         public static readonly Regex HttpHeaderRegex = new Regex(
-            $@"{FileAndPositionPrefixPattern}\s{{5}}(?<{NameGroupName}>[^:]+)\s*\:\s*(?<{ValueGroupName}>.*?)\r\n$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
-
-        public static readonly Regex HttpHeaderEndedRegex = new Regex(
-            $@"{FileAndPositionPrefixPattern}\s{{5}}\r\n$",
+            $@"^(?<{NameGroupName}>[^:]+)\s*\:\s*(?<{ValueGroupName}>.*?)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         #endregion
@@ -173,6 +173,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             var result = new IPEndPoint(ipAddress, port);
             return result;
+        }
+
+        [NotNull]
+        public static string UnescapeLogString([NotNull] this string value)
+        {
+            #region Argument Check
+
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
+
+            #endregion
+
+            return Regex.Unescape(value);  // Seems to be a good conversion method at the moment
         }
 
         #endregion
