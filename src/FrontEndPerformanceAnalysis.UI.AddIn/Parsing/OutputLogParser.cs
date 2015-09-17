@@ -8,7 +8,7 @@ using Omnifactotum;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 {
-    internal sealed class VuGenOutputLogParser : IDisposable
+    internal sealed class OutputLogParser : IDisposable
     {
         #region Constants and Fields
 
@@ -16,11 +16,24 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private bool _isDisposed;
         private bool _isParseExecuted;
 
+        private TransactionInfo _transactionInfo;
+        private int _pageUniqueId;
+        private int _implicitTransactionUniqueId;
+        private List<HarPage> _harPages;
+        private List<HarEntry> _harEntries;
+        private Dictionary<long, HarEntry> _internalIdToHarEntryMap;
+        private HarPage _harPage;
+        private string _rawLine;
+        private string _line;
+        private int _lineIndex;
+        private bool _skipFetchOnce;
+        private List<TransactionInfo> _transactionInfos;
+
         #endregion
 
         #region Constructors
 
-        public VuGenOutputLogParser(string logPath)
+        public OutputLogParser(string logPath)
         {
             if (string.IsNullOrWhiteSpace(logPath))
             {
@@ -52,7 +65,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             _isParseExecuted = true;
 
-            return ParseInternal();
+            ParseInternal();
+
+            var result = _transactionInfos.EnsureNotNull().ToArray();
+            _transactionInfos = null;
+            return result;
         }
 
         #endregion
@@ -97,135 +114,130 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
         }
 
-        private TransactionInfo[] ParseInternal()
+        private bool FetchLine()
         {
-            var transactionInfos = new List<TransactionInfo>();
-
-            TransactionInfo transactionInfo = null;
-            var pageUniqueId = 0;
-            var implicitTransactionUniqueId = 0;
-            List<HarPage> harPages = null;
-            List<HarEntry> harEntries = null;
-            Dictionary<long, HarEntry> internalIdToHarEntryMap = null;
-            HarPage harPage = null;
-
-            string rawLine = null;
-            string line = null;
-            var lineIndex = 0;
-            var skipFetchOnce = false;
-
-            //// ReSharper disable once AccessToDisposedClosure - Executed immediately in scope of 'using' in this case
-            Func<bool> fetchLine =
-                () =>
+            if (_skipFetchOnce)
+            {
+                if (_lineIndex == 0)
                 {
-                    if (skipFetchOnce)
+                    throw new InvalidOperationException(
+                        "The fetch of a line is not supposed to be skipped at the very beginning.");
+                }
+
+                _skipFetchOnce = false;
+                return _rawLine != null;
+            }
+
+            _rawLine = _reader.ReadLine();
+            if (_rawLine == null)
+            {
+                _line = null;
+                return false;
+            }
+
+            _line = NormalizeOutputLogString(_rawLine);
+            _lineIndex++;
+
+            return true;
+        }
+
+        private void CommitTransactionIfPending()
+        {
+            if (_transactionInfo == null)
+            {
+                return;
+            }
+
+            var harLog = _transactionInfo.HarRoot.EnsureNotNull().Log.EnsureNotNull();
+
+            harLog.Pages = _harPages.EnsureNotNull().ToArray();
+            harLog.Entries = _harEntries.EnsureNotNull().ToArray();
+
+            _transactionInfos.Add(_transactionInfo);
+
+            _transactionInfo = null;
+            _harPages = null;
+            _harEntries = null;
+            _internalIdToHarEntryMap = null;
+        }
+
+        private TransactionInfo CreateTransaction(string name)
+        {
+            var result = new TransactionInfo(name)
+            {
+                HarRoot =
+                {
+                    Log = new HarLog
                     {
-                        if (lineIndex == 0)
+                        Creator = new HarCreator
                         {
-                            throw new InvalidOperationException(
-                                "The fetch of a line is not supposed to be skipped at the very beginning.");
+                            Name = GetType().GetFullName(),
+                            Version = GetType().Assembly.GetName().Version.ToString()
                         }
-
-                        skipFetchOnce = false;
-                        return rawLine != null;
                     }
+                }
+            };
 
-                    rawLine = _reader.ReadLine();
-                    if (rawLine == null)
-                    {
-                        line = null;
-                        return false;
-                    }
+            _harPages = new List<HarPage>();
+            _harEntries = new List<HarEntry>();
+            _internalIdToHarEntryMap = new Dictionary<long, HarEntry>();
 
-                    line = NormalizeOutputLogString(rawLine);
-                    lineIndex++;
+            return result;
+        }
 
-                    return true;
-                };
+        private TransactionInfo CreateImplicitTransactionInfo()
+        {
+            _implicitTransactionUniqueId++;
+            var name = $"Implicit transaction {_implicitTransactionUniqueId}";
+            return CreateTransaction(name);
+        }
 
-            Func<bool> commitTransaction =
-                () =>
-                {
-                    // ReSharper disable once AccessToModifiedClosure - As designed
-                    if (transactionInfo == null)
-                    {
-                        return false;
-                    }
+        private void EnsureTransactionInfo()
+        {
+            if (_transactionInfo == null)
+            {
+                _transactionInfo = CreateImplicitTransactionInfo();
+            }
+        }
 
-                    // ReSharper disable once AccessToModifiedClosure - As designed
-                    var harLog = transactionInfo.HarRoot.EnsureNotNull().Log.EnsureNotNull();
+        private void ParseInternal()
+        {
+            _transactionInfos = new List<TransactionInfo>();
 
-                    harLog.Pages = harPages.EnsureNotNull().ToArray();
-                    harLog.Entries = harEntries.EnsureNotNull().ToArray();
+            _transactionInfo = null;
+            _pageUniqueId = 0;
+            _implicitTransactionUniqueId = 0;
+            _harPages = null;
+            _harEntries = null;
+            _internalIdToHarEntryMap = null;
+            _harPage = null;
 
-                    // ReSharper disable once AccessToModifiedClosure - As designed
-                    transactionInfos.Add(transactionInfo);
-
-                    transactionInfo = null;
-                    harPages = null;
-                    harEntries = null;
-                    internalIdToHarEntryMap = null;
-
-                    return true;
-                };
-
-            Func<string, TransactionInfo> createTransactionInfo =
-                name =>
-                {
-                    var result = new TransactionInfo(name)
-                    {
-                        HarRoot =
-                        {
-                            Log = new HarLog
-                            {
-                                Creator = new HarCreator
-                                {
-                                    Name = GetType().GetFullName(),
-                                    Version = GetType().Assembly.GetName().Version.ToString()
-                                }
-                            }
-                        }
-                    };
-
-                    harPages = new List<HarPage>();
-                    harEntries = new List<HarEntry>();
-                    internalIdToHarEntryMap = new Dictionary<long, HarEntry>();
-
-                    return result;
-                };
-
-            Func<TransactionInfo> createImplicitTransactionInfo =
-                () =>
-                {
-                    implicitTransactionUniqueId++;
-                    var name = $"Implicit transaction {implicitTransactionUniqueId}";
-                    return createTransactionInfo(name);
-                };
-
-            Func<TransactionInfo> ensureTransactionInfo =
-                () => transactionInfo ?? (transactionInfo = createImplicitTransactionInfo());
+            _rawLine = null;
+            _line = null;
+            _lineIndex = 0;
+            _skipFetchOnce = false;
 
             //// ReSharper disable once LoopVariableIsNeverChangedInsideLoop - False positive
-            while (fetchLine())
+            while (FetchLine())
             {
-                var transactionEndMatch = line.MatchAgainst(ParsingHelper.TransactionEndRegex);
+                var transactionEndMatch = _line.MatchAgainst(ParsingHelper.TransactionEndRegex);
                 if (transactionEndMatch.Success)
                 {
-                    commitTransaction();
+                    CommitTransactionIfPending();
                     continue;
                 }
 
-                var transactionStartMatch = line.MatchAgainst(ParsingHelper.TransactionStartRegex);
+                var transactionStartMatch = _line.MatchAgainst(ParsingHelper.TransactionStartRegex);
                 if (transactionStartMatch.Success)
                 {
-                    commitTransaction();
+                    CommitTransactionIfPending();
 
                     var name = transactionStartMatch.GetSucceededGroupValue(ParsingHelper.NameGroupName);
-                    transactionInfo = createTransactionInfo(name);
+                    _transactionInfo = CreateTransaction(name);
                     continue;
                 }
 
-                var connectedSocketMatch = line.MatchAgainst(ParsingHelper.ConnectedSocketRegex);
+                var connectedSocketMatch = _line.MatchAgainst(ParsingHelper.ConnectedSocketRegex);
                 if (connectedSocketMatch.Success)
                 {
                     var sourceEndpointMatch = connectedSocketMatch
@@ -239,11 +251,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     Debug.WriteLine(sourceEndpointMatch.Value);
                     Debug.WriteLine(targetEndpointMatch.Value);
 
-                    fetchLine();
-                    var requestHeadersMarkerMatch = line.MatchAgainst(ParsingHelper.RequestHeadersMarkerRegex);
+                    FetchLine();
+                    var requestHeadersMarkerMatch = _line.MatchAgainst(ParsingHelper.RequestHeadersMarkerRegex);
                     if (!requestHeadersMarkerMatch.Success)
                     {
-                        throw new InvalidOperationException($"Request header was expected at line {lineIndex}.");
+                        throw new InvalidOperationException($"Request header was expected at line {_lineIndex}.");
                     }
 
                     var url = requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.UrlGroupName);
@@ -257,17 +269,17 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     var internalId =
                         ParseLong(requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName));
 
-                    ensureTransactionInfo();
+                    EnsureTransactionInfo();
 
-                    if (frameId.HasValue || harPage == null)
+                    if (frameId.HasValue || _harPage == null)
                     {
-                        harPage = new HarPage
+                        _harPage = new HarPage
                         {
-                            Id = $"page_{++pageUniqueId}",
+                            Id = $"page_{++_pageUniqueId}",
                             Title = url
                         };
 
-                        harPages.EnsureNotNull().Add(harPage);
+                        _harPages.EnsureNotNull().Add(_harPage);
                     }
 
                     var harRequest = new HarRequest
@@ -278,23 +290,23 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
                     var harEntry = new HarEntry
                     {
-                        PageRef = harPage.Id,
+                        PageRef = _harPage.Id,
                         ////ConnectionId = //// TODO [vmcl] ConnectionId = Port of SourceEndpointGroupName
                         ////ServerIPAddress =  //// TODO [vmcl] ConnectionId = From TargetEndpointGroupName
                         Request = harRequest
                     };
 
-                    harEntries.EnsureNotNull().Add(harEntry);
-                    internalIdToHarEntryMap.Add(internalId, harEntry);
+                    _harEntries.EnsureNotNull().Add(harEntry);
+                    _internalIdToHarEntryMap.EnsureNotNull().Add(internalId, harEntry);
 
-                    fetchLine();
-                    var httpRequestLineMatch = line.MatchAgainst(ParsingHelper.HttpRequestLineRegex);
+                    FetchLine();
+                    var httpRequestLineMatch = _line.MatchAgainst(ParsingHelper.HttpRequestLineRegex);
                     if (!httpRequestLineMatch.Success)
                     {
                         //// TODO [vmcl] VuGen output may contain Request-Line carried over to a few lines
 
                         throw new InvalidOperationException(
-                            $"An HTTP Request-Line was expected at line {lineIndex}.");
+                            $"An HTTP Request-Line was expected at line {_lineIndex}.");
                     }
 
                     harRequest.Method = httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpMethodGroupName);
@@ -304,11 +316,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     var harHeaders = new List<HarHeader>();
 
                     //// ReSharper disable LoopVariableIsNeverChangedInsideLoop - False positive
-                    while (fetchLine())
+                    while (FetchLine())
                     {
                         //// ReSharper restore LoopVariableIsNeverChangedInsideLoop
 
-                        var headerMatch = line.MatchAgainst(ParsingHelper.HttpHeaderRegex);
+                        var headerMatch = _line.MatchAgainst(ParsingHelper.HttpHeaderRegex);
                         if (!headerMatch.Success)
                         {
                             break;
@@ -322,10 +334,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
                     harRequest.Headers = harHeaders.ToArray();
 
-                    if (!line.MatchAgainst(ParsingHelper.HttpHeaderEndedRegex).Success)
+                    if (!_line.MatchAgainst(ParsingHelper.HttpHeaderEndedRegex).Success)
                     {
                         throw new InvalidOperationException(
-                            $"The HTTP headers ended prematurely at line {lineIndex}.");
+                            $"The HTTP headers ended prematurely at line {_lineIndex}.");
                     }
 
                     continue;
@@ -335,10 +347,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 //// TODO [vmcl] Parse response headers
                 //// TODO [vmcl] Parse response body
 
-                Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {rawLine}");
+                Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_rawLine}");
             }
-
-            return transactionInfos.ToArray();
         }
 
         #endregion

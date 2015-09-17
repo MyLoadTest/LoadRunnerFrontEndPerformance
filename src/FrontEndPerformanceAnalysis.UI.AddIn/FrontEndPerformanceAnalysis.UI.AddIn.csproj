@@ -114,7 +114,7 @@
     <Compile Include="Pads\AnalysisPad.cs" />
     <Compile Include="Parsing\ParsingHelper.cs" />
     <Compile Include="Parsing\TransactionInfo.cs" />
-    <Compile Include="Parsing\VuGenOutputLogParser.cs" />
+    <Compile Include="Parsing\OutputLogParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

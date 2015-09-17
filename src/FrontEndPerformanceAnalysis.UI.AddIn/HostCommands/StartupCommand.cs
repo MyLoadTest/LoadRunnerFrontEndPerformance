@@ -27,9 +27,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.HostCommands
             if (File.Exists(LogPath))
             {
                 TransactionInfo[] transactionInfos;
-                using (var logParser = new VuGenOutputLogParser(LogPath))
+                using (var parser = new OutputLogParser(LogPath))
                 {
-                    transactionInfos = logParser.Parse();
+                    transactionInfos = parser.Parse();
                 }
 
                 Trace.WriteLine(transactionInfos.Length);
