@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har;
 using Omnifactotum;
@@ -226,6 +227,106 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
         }
 
+        private void AddHarEntry(long internalId, HarEntry harEntry)
+        {
+            if (harEntry == null)
+            {
+                throw new ArgumentNullException(nameof(harEntry));
+            }
+
+            _harEntries.EnsureNotNull().Add(harEntry);
+            _internalIdToHarEntryMap.EnsureNotNull().Add(internalId, harEntry);
+        }
+
+        private void FetchRequestHeaders(IPEndPoint sourceEndpoint, IPEndPoint targetEndpoint)
+        {
+            FetchLine();
+            var requestHeadersMarkerMatch = _line.MatchAgainst(ParsingHelper.RequestHeadersMarkerRegex);
+            if (!requestHeadersMarkerMatch.Success)
+            {
+                throw new InvalidOperationException($"Request header was expected at line {_lineIndex}.");
+            }
+
+            var url = requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.UrlGroupName);
+            var size = ParseLong(
+                requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.SizeGroupName));
+
+            var frameId =
+                ParseNullableLong(
+                    requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.FrameIdGroupName));
+
+            var internalId =
+                ParseLong(requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName));
+
+            EnsureTransactionInfo();
+
+            if (frameId.HasValue || _harPage == null)
+            {
+                _harPage = new HarPage
+                {
+                    Id = $"page_{++_pageUniqueId}",
+                    Title = url
+                };
+
+                _harPages.EnsureNotNull().Add(_harPage);
+            }
+
+            var harRequest = new HarRequest
+            {
+                HeadersSize = size,
+                Url = url
+            };
+
+            var harEntry = new HarEntry
+            {
+                PageRef = _harPage.Id,
+                ConnectionId = sourceEndpoint.Port.ToString(CultureInfo.InvariantCulture),
+                ServerIPAddress = targetEndpoint.Address.ToString(),
+                Request = harRequest
+            };
+
+            AddHarEntry(internalId, harEntry);
+
+            var multilineString = FetchMultipleLines();
+
+            var requestLineString = multilineString.Lines.FirstOrDefault();
+            var httpRequestLineMatch = requestLineString.MatchAgainst(ParsingHelper.HttpRequestLineRegex);
+            if (!httpRequestLineMatch.Success)
+            {
+                throw new InvalidOperationException(
+                    $"An HTTP Request-Line was expected at line {multilineString.LineIndexRange.Lower}.");
+            }
+
+            harRequest.Method = httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpMethodGroupName);
+            harRequest.HttpVersion =
+                httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpVersionGroupName);
+
+            var harHeaders = new List<HarHeader>();
+            for (var index = 1; index < multilineString.Lines.Count; index++)
+            {
+                var line = multilineString.Lines[index];
+                if (line.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                var headerMatch = line.MatchAgainst(ParsingHelper.HttpHeaderRegex);
+                if (!headerMatch.Success)
+                {
+                    throw new InvalidOperationException(
+                        $@"An HTTP Request-Line and Headers are expected at lines {
+                            multilineString.LineIndexRange.Lower}-{multilineString.LineIndexRange.Upper}.");
+                }
+
+                var name = headerMatch.GetSucceededGroupValue(ParsingHelper.NameGroupName);
+                var value = headerMatch.GetSucceededGroupValue(ParsingHelper.ValueGroupName);
+                var harHeader = new HarHeader { Name = name, Value = value };
+                harHeaders.Add(harHeader);
+            }
+
+            harRequest.Headers = harHeaders.ToArray();
+        }
+
         private void ParseInternal()
         {
             _transactionInfos = new List<TransactionInfo>();
@@ -261,6 +362,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     continue;
                 }
 
+                //// TODO [vmcl] Process 'Already connected [#] to ...'
+
                 var connectedSocketMatch = _line.MatchAgainst(ParsingHelper.ConnectedSocketRegex);
                 if (connectedSocketMatch.Success)
                 {
@@ -272,93 +375,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                         .GetSucceededGroupValue(ParsingHelper.TargetEndpointGroupName)
                         .ParseEndPoint();
 
-                    FetchLine();
-                    var requestHeadersMarkerMatch = _line.MatchAgainst(ParsingHelper.RequestHeadersMarkerRegex);
-                    if (!requestHeadersMarkerMatch.Success)
-                    {
-                        throw new InvalidOperationException($"Request header was expected at line {_lineIndex}.");
-                    }
-
-                    var url = requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.UrlGroupName);
-                    var size = ParseLong(
-                        requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.SizeGroupName));
-
-                    var frameId =
-                        ParseNullableLong(
-                            requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.FrameIdGroupName));
-
-                    var internalId =
-                        ParseLong(requestHeadersMarkerMatch.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName));
-
-                    EnsureTransactionInfo();
-
-                    if (frameId.HasValue || _harPage == null)
-                    {
-                        _harPage = new HarPage
-                        {
-                            Id = $"page_{++_pageUniqueId}",
-                            Title = url
-                        };
-
-                        _harPages.EnsureNotNull().Add(_harPage);
-                    }
-
-                    var harRequest = new HarRequest
-                    {
-                        HeadersSize = size,
-                        Url = url
-                    };
-
-                    var harEntry = new HarEntry
-                    {
-                        PageRef = _harPage.Id,
-                        ConnectionId = sourceEndpoint.Port.ToString(CultureInfo.InvariantCulture),
-                        ServerIPAddress = targetEndpoint.Address.ToString(),
-                        Request = harRequest
-                    };
-
-                    _harEntries.EnsureNotNull().Add(harEntry);
-                    _internalIdToHarEntryMap.EnsureNotNull().Add(internalId, harEntry);
-
-                    var multilineString = FetchMultipleLines();
-
-                    var requestLineString = multilineString.Lines.FirstOrDefault();
-                    var httpRequestLineMatch = requestLineString.MatchAgainst(ParsingHelper.HttpRequestLineRegex);
-                    if (!httpRequestLineMatch.Success)
-                    {
-                        throw new InvalidOperationException(
-                            $"An HTTP Request-Line was expected at line {multilineString.LineIndexRange.Lower}.");
-                    }
-
-                    harRequest.Method = httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpMethodGroupName);
-                    harRequest.HttpVersion =
-                        httpRequestLineMatch.GetSucceededGroupValue(ParsingHelper.HttpVersionGroupName);
-
-                    var harHeaders = new List<HarHeader>();
-                    for (var index = 1; index < multilineString.Lines.Count; index++)
-                    {
-                        var line = multilineString.Lines[index];
-                        if (line.IsNullOrEmpty())
-                        {
-                            continue;
-                        }
-
-                        var headerMatch = line.MatchAgainst(ParsingHelper.HttpHeaderRegex);
-                        if (!headerMatch.Success)
-                        {
-                            throw new InvalidOperationException(
-                                $@"An HTTP Request-Line and Headers are expected at lines {
-                                    multilineString.LineIndexRange.Lower}-{multilineString.LineIndexRange.Upper}.");
-                        }
-
-                        var name = headerMatch.GetSucceededGroupValue(ParsingHelper.NameGroupName);
-                        var value = headerMatch.GetSucceededGroupValue(ParsingHelper.ValueGroupName);
-                        var harHeader = new HarHeader { Name = name, Value = value };
-                        harHeaders.Add(harHeader);
-                    }
-
-                    harRequest.Headers = harHeaders.ToArray();
-
+                    FetchRequestHeaders(sourceEndpoint, targetEndpoint);
                     continue;
                 }
 
