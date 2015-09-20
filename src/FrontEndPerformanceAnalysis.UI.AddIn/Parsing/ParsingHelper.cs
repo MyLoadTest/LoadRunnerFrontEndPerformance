@@ -24,17 +24,24 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         public const string FrameIdGroupName = "FrameId";
         public const string InternalIdGroupName = "InternalId";
         public const string UrlGroupName = "Url";
+        public const string SocketIdGroupName = "SocketId";
         public const string HttpMethodGroupName = "HttpMethod";
         public const string HttpVersionGroupName = "HttpVersion";
+        public const string HttpStatusCodeGroupName = "HttpStatusCode";
+        public const string HttpReasonPhraseGroupName = "HttpReasonPhrase";
 
         private const string DecimalNumberPattern = @"\d+\.?\d*|\d*\.?\d+";
+        private const string SocketIdPattern = @"\d+";
         private const string IPAddressPattern = @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"; // IPv4 only so far
         private const string PortPattern = @"\d+";
 
         private const string FileAndPositionPrefixPattern = @"^[^\(]+\(\d+\):";
 
+        private const string HttpVersionPattern = @"\d+\.\d+";
+
         private const string HttpRequestLineElementPattern = @"\S+";
-        private const string HttpRequestLineVersionPattern = @"\d+\.\d+";
+        private const string HttpStatusCodePattern = @"\d{3}";
+        private const string HttpReasonPhrasePattern = @".*";
 
         private static readonly string IPAddressAndPortPattern = $@"{IPAddressPattern}\:{PortPattern}";
 
@@ -54,9 +61,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         public static readonly Regex ConnectedSocketRegex = new Regex(
-            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Connected socket \[\d+\] from (?<{
-                SourceEndpointGroupName}>{IPAddressAndPortPattern}) to (?<{TargetEndpointGroupName}>{
-                IPAddressAndPortPattern}) in (?<{DurationGroupName}>\d+) ms\s+\[MsgId\: MMSG\-\d+\]$",
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Connected socket \[(?<{
+                SocketIdGroupName}>{SocketIdPattern})\] from (?<{SourceEndpointGroupName}>{IPAddressAndPortPattern
+                }) to (?<{TargetEndpointGroupName}>{IPAddressAndPortPattern}) in (?<{DurationGroupName
+                }>\d+) ms\s+\[MsgId\: MMSG\-\d+\]$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
+        public static readonly Regex AlreadyConnectedRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Already connected \[(?<{
+                SocketIdGroupName}>{SocketIdPattern})\] to \S*?\s+\[MsgId\: MMSG\-\d+\]$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         public static readonly Regex RequestHeadersMarkerRegex = new Regex(
@@ -72,11 +85,22 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         public static readonly Regex HttpRequestLineRegex = new Regex(
             $@"^(?<{HttpMethodGroupName}>{HttpRequestLineElementPattern})\s+(?<{
                 UrlGroupName}>{HttpRequestLineElementPattern})\s+HTTP/(?<{HttpVersionGroupName}>{
-                HttpRequestLineVersionPattern})\s*$",
+                HttpVersionPattern})\s*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         public static readonly Regex HttpHeaderRegex = new Regex(
             $@"^(?<{NameGroupName}>[^:]+)\s*\:\s*(?<{ValueGroupName}>.*?)$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
+        public static readonly Regex ResponseHeadersMarkerRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: (?<{SizeGroupName
+                }>\d+)-byte response headers for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
+                }>\d*)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
+        public static readonly Regex HttpStatusLineRegex = new Regex(
+            $@"^\s*HTTP/(?<{HttpVersionGroupName}>{HttpVersionPattern})\s+(?<{HttpStatusCodeGroupName}>{
+                HttpStatusCodePattern})\s+(?<{HttpReasonPhraseGroupName}>{HttpReasonPhrasePattern})$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         #endregion
@@ -187,7 +211,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             #endregion
 
-            return Regex.Unescape(value);  // Seems to be a good conversion method at the moment
+            return Regex.Unescape(value); // Seems to be a good conversion method at the moment
         }
 
         #endregion
