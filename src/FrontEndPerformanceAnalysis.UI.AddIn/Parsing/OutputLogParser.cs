@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -384,60 +383,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 //// TODO [vmcl] Parse response body
 
                 Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_line}");
-            }
-        }
-
-        #endregion
-
-        #region MultilineString Class
-
-        [DebuggerDisplay(
-            "{GetType().Name,nq}. LineIndexRange = {LineIndexRange.ToString()}"
-                + ", Lines.Count = {Lines?.Count}")]
-        private sealed class MultilineString
-        {
-            public MultilineString([CanBeNull] string value, ValueRange<int> lineIndexRange)
-            {
-                Lines = SplitIntoLines(value).AsReadOnly();
-                LineIndexRange = lineIndexRange;
-            }
-
-            [NotNull]
-            public ReadOnlyCollection<string> Lines
-            {
-                get;
-            }
-
-            public ValueRange<int> LineIndexRange
-            {
-                get;
-            }
-
-            private static string[] SplitIntoLines([CanBeNull] string value)
-            {
-                if (value == null)
-                {
-                    return new string[0];
-                }
-
-                if (value == string.Empty)
-                {
-                    return string.Empty.AsArray();
-                }
-
-                var unescapedValue = value.UnescapeLogString();
-
-                var lines = new List<string>();
-                using (var stringReader = new StringReader(unescapedValue))
-                {
-                    string line;
-                    while ((line = stringReader.ReadLine()) != null)
-                    {
-                        lines.Add(line);
-                    }
-                }
-
-                return lines.ToArray();
             }
         }
 
