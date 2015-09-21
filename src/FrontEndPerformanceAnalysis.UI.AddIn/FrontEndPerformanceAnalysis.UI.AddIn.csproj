@@ -88,6 +88,7 @@
     <Compile Include="Har\HarContent.cs" />
     <Compile Include="Har\HarCookie.cs" />
     <Compile Include="Har\HarCreator.cs" />
+    <Compile Include="Har\HarTimestampedObject.cs" />
     <Compile Include="Har\HarEntry.cs" />
     <Compile Include="Har\HarEntryTimings.cs" />
     <Compile Include="Har\HarNameValueObject.cs" />

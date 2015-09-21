@@ -33,6 +33,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private bool _skipFetchOnce;
         private List<TransactionInfo> _transactionInfos;
         private Dictionary<int, SocketData> _socketIdToDataMap;
+        private DateTimeOffset? _scriptStartTime;
 
         #endregion
 
@@ -95,21 +96,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         #endregion
 
         #region Private Methods
-
-        private static long? ParseNullableLong(string value)
-        {
-            return value.IsNullOrEmpty() ? default(long?) : ParseLong(value);
-        }
-
-        private static long ParseLong(string value)
-        {
-            return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
-
-        private static int ParseInt(string value)
-        {
-            return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-        }
 
         private static HarHeader[] ParseHttpHeaders(MultilineString multilineString)
         {
@@ -229,6 +215,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         private TransactionInfo CreateTransaction(string name)
         {
+            if (!_scriptStartTime.HasValue)
+            {
+                throw new InvalidOperationException(
+                    $@"The script's start date/time was supposed to be encountered before transaction is started (line {
+                        _lineIndex}).");
+            }
+
             var result = new TransactionInfo(name)
             {
                 HarRoot =
@@ -288,16 +281,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
 
             var url = match.GetSucceededGroupValue(ParsingHelper.UrlGroupName);
-            var size = ParseLong(match.GetSucceededGroupValue(ParsingHelper.SizeGroupName));
-            var frameId = ParseNullableLong(match.GetSucceededGroupValue(ParsingHelper.FrameIdGroupName));
-            var internalId = ParseLong(match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName));
+            var size = match.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
+            var frameId = match.GetSucceededGroupValue(ParsingHelper.FrameIdGroupName).ParseNullableLong();
+            var internalId = match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
+
+            var timestampOffset =
+                TimeSpan.FromMilliseconds(match.GetSucceededGroupValue(ParsingHelper.TimestampGroupName).ParseLong());
+            var startTime = _scriptStartTime.EnsureNotNull() + timestampOffset;
 
             if (frameId.HasValue || _harPage == null)
             {
                 _harPage = new HarPage
                 {
                     Id = $"page_{++_pageUniqueId}",
-                    Title = url
+                    Title = url,
+                    StartedDateTime = startTime
                 };
 
                 _harPages.EnsureNotNull().Add(_harPage);
@@ -314,6 +312,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 PageRef = _harPage.Id,
                 ConnectionId = sourceEndpoint.Port.ToString(CultureInfo.InvariantCulture),
                 ServerIPAddress = targetEndpoint.Address.ToString(),
+                StartedDateTime = startTime,
                 Request = harRequest,
                 Response = new HarResponse()
             };
@@ -340,8 +339,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         private void ProcessResponseHeaders(Match match)
         {
-            var size = ParseLong(match.GetSucceededGroupValue(ParsingHelper.SizeGroupName));
-            var internalId = ParseLong(match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName));
+            var size = match.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
+            var internalId = match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
 
             EnsureTransactionInfo();
 
@@ -373,7 +372,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
 
             var httpVersion = statusLineMatch.GetSucceededGroupValue(ParsingHelper.HttpVersionGroupName);
-            var statusCode = ParseInt(statusLineMatch.GetSucceededGroupValue(ParsingHelper.HttpStatusCodeGroupName));
+            var statusCode = statusLineMatch.GetSucceededGroupValue(ParsingHelper.HttpStatusCodeGroupName).ParseInt();
             var statusText = statusLineMatch.GetSucceededGroupValue(ParsingHelper.HttpReasonPhraseGroupName);
 
             harResponse.HttpVersion = httpVersion;
@@ -399,9 +398,32 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             _line = null;
             _lineIndex = 0;
             _skipFetchOnce = false;
+            _scriptStartTime = null;
 
             while (FetchLine())
             {
+                var utcStartTimeMatch = _line.MatchAgainst(ParsingHelper.UtcStartTimeRegex);
+                if (utcStartTimeMatch.Success)
+                {
+                    if (_scriptStartTime.HasValue)
+                    {
+                        throw new InvalidOperationException(@"The script's start date/time was already found.");
+                    }
+
+                    var year = utcStartTimeMatch.GetSucceededGroupValue(ParsingHelper.DateYearGroupName).ParseInt();
+                    var month = utcStartTimeMatch.GetSucceededGroupValue(ParsingHelper.DateMonthGroupName).ParseInt();
+                    var day = utcStartTimeMatch.GetSucceededGroupValue(ParsingHelper.DateDayGroupName).ParseInt();
+
+                    var hour = utcStartTimeMatch.GetSucceededGroupValue(ParsingHelper.DateHourGroupName).ParseInt();
+                    var minute =
+                        utcStartTimeMatch.GetSucceededGroupValue(ParsingHelper.DateMinuteGroupName).ParseInt();
+                    var second =
+                        utcStartTimeMatch.GetSucceededGroupValue(ParsingHelper.DateSecondGroupName).ParseInt();
+
+                    _scriptStartTime = new DateTimeOffset(year, month, day, hour, minute, second, TimeSpan.Zero);
+                    continue;
+                }
+
                 var transactionEndMatch = _line.MatchAgainst(ParsingHelper.TransactionEndRegex);
                 if (transactionEndMatch.Success)
                 {
@@ -423,7 +445,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 if (connectedSocketMatch.Success)
                 {
                     var socketId =
-                        ParseInt(connectedSocketMatch.GetSucceededGroupValue(ParsingHelper.SocketIdGroupName));
+                        connectedSocketMatch.GetSucceededGroupValue(ParsingHelper.SocketIdGroupName).ParseInt();
 
                     var sourceEndpoint = connectedSocketMatch
                         .GetSucceededGroupValue(ParsingHelper.SourceEndpointGroupName)
@@ -451,7 +473,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 if (alreadyConnectedMatch.Success)
                 {
                     var socketId =
-                        ParseInt(alreadyConnectedMatch.GetSucceededGroupValue(ParsingHelper.SocketIdGroupName));
+                        alreadyConnectedMatch.GetSucceededGroupValue(ParsingHelper.SocketIdGroupName).ParseInt();
 
                     EnsureTransactionInfo();
 
@@ -474,7 +496,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 }
 
                 //// TODO [vmcl] Parse request body
-                //// TODO [vmcl] Parse response headers
                 //// TODO [vmcl] Parse response body
 
                 Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_line}");

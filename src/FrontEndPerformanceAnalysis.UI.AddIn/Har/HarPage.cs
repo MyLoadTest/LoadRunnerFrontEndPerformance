@@ -7,16 +7,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
 {
     [DataContract]
     [DebuggerDisplay("{GetType().Name,nq}. Id = {Id}, Title = {Title}")]
-    internal sealed class HarPage
+    internal sealed class HarPage : HarTimestampedObject
     {
         #region Public Properties
-
-        [DataMember(Name = "startedDateTime")]
-        public string StartedDateTimeAsString
-        {
-            get;
-            set;
-        }
 
         [DataMember(Name = "id")]
         public string Id

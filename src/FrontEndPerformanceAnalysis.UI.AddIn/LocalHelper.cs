@@ -100,6 +100,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
             }
         }
 
+        public static string ToUtcIso8601String(this DateTimeOffset value)
+        {
+            return value.UtcDateTime.ToString("O");
+        }
+
+        public static DateTimeOffset? ParseIso8601DateTime([CanBeNull] this string value)
+        {
+            if (value.IsNullOrWhiteSpace())
+            {
+                return null;
+            }
+
+            return DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        }
+
         #endregion
     }
 }

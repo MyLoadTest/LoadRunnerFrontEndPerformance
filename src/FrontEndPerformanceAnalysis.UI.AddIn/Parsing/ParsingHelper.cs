@@ -8,10 +8,18 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 {
     internal static class ParsingHelper
     {
-        #region Constants and Fields
+        #region Constants and Fields: Group Names
+
+        public const string DateYearGroupName = "DateYear";
+        public const string DateMonthGroupName = "DateMonth";
+        public const string DateDayGroupName = "DateDay";
+        public const string DateHourGroupName = "DateHour";
+        public const string DateMinuteGroupName = "DateMinute";
+        public const string DateSecondGroupName = "DateSecond";
 
         public const string NameGroupName = "Name";
         public const string ValueGroupName = "Value";
+
         public const string StatusGroupName = "Status";
         public const string DurationGroupName = "Duration";
         public const string WastedTimeGroupName = "WastedTime";
@@ -25,10 +33,22 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         public const string InternalIdGroupName = "InternalId";
         public const string UrlGroupName = "Url";
         public const string SocketIdGroupName = "SocketId";
+
         public const string HttpMethodGroupName = "HttpMethod";
         public const string HttpVersionGroupName = "HttpVersion";
         public const string HttpStatusCodeGroupName = "HttpStatusCode";
         public const string HttpReasonPhraseGroupName = "HttpReasonPhrase";
+
+        #endregion
+
+        #region Constants and Fields: Patterns
+
+        private const string DateYearPattern = @"\d{4}";
+        private const string DateMonthPattern = @"\d{2}";
+        private const string DateDayPattern = @"\d{2}";
+        private const string DateHourPattern = @"\d{2}";
+        private const string DateMinutePattern = @"\d{2}";
+        private const string DateSecondPattern = @"\d{2}";
 
         private const string DecimalNumberPattern = @"\d+\.?\d*|\d*\.?\d+";
         private const string SocketIdPattern = @"\d+";
@@ -44,6 +64,17 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private const string HttpReasonPhrasePattern = @".*";
 
         private static readonly string IPAddressAndPortPattern = $@"{IPAddressPattern}\:{PortPattern}";
+
+        #endregion
+
+        #region Constants and Fields: Regular Expressions
+
+        public static readonly Regex UtcStartTimeRegex = new Regex(
+            $@"UTC \(GMT\) start date\/time\s*:\s*(?<{DateYearGroupName}>{DateYearPattern})\-(?<{DateMonthGroupName}>{
+                DateMonthPattern})\-(?<{DateDayGroupName}>{DateDayPattern}) (?<{DateHourGroupName}>{DateHourPattern
+                })\:(?<{DateMinuteGroupName}>{DateMinutePattern})\:(?<{DateSecondGroupName}>{DateSecondPattern
+                })\s+\[MsgId\: MMSG\-\d+\]$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
 
         public static readonly Regex IPEndPointRegex = new Regex(
             $@"(?<{IPAddressGroupName}>{IPAddressPattern})\:(?<{PortGroupName}>{PortPattern})",
@@ -212,6 +243,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             #endregion
 
             return Regex.Unescape(value); // Seems to be a good conversion method at the moment
+        }
+
+        public static long? ParseNullableLong(this string value)
+        {
+            return value.IsNullOrEmpty() ? default(long?) : ParseLong(value);
+        }
+
+        public static long ParseLong([NotNull] this string value)
+        {
+            return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        }
+
+        public static int ParseInt([NotNull] this string value)
+        {
+            return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         #endregion

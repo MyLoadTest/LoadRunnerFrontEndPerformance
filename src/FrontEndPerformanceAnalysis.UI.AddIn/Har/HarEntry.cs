@@ -9,19 +9,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
     [DebuggerDisplay(
         "{GetType().Name,nq}. PageRef = {PageRef}, ConnectionId = {ConnectionId}"
             + ", ServerIPAddress = {ServerIPAddress}, Request.Url = {Request?.Url}")]
-    internal sealed class HarEntry
+    internal sealed class HarEntry : HarTimestampedObject
     {
         #region Public Properties
 
         [DataMember(Name = "pageref")]
         public string PageRef
-        {
-            get;
-            set;
-        }
-
-        [DataMember(Name = "startedDateTime")]
-        public string StartedDateTimeAsString
         {
             get;
             set;
