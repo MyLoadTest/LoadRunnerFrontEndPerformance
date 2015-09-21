@@ -10,49 +10,49 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
         #region Public Properties
 
         [DataMember(Name = "blocked")]
-        public decimal? Blocked
+        public long? Blocked
         {
             get;
             set;
         }
 
         [DataMember(Name = "dns")]
-        public decimal? Dns
+        public long? Dns
         {
             get;
             set;
         }
 
         [DataMember(Name = "connect")]
-        public decimal? Connect
+        public long? Connect
         {
             get;
             set;
         }
 
         [DataMember(Name = "send")]
-        public decimal? Send
+        public long? Send
         {
             get;
             set;
         }
 
         [DataMember(Name = "wait")]
-        public decimal? Wait
+        public long? Wait
         {
             get;
             set;
         }
 
         [DataMember(Name = "receive")]
-        public decimal? Receive
+        public long? Receive
         {
             get;
             set;
         }
 
         [DataMember(Name = "ssl")]
-        public decimal? Ssl
+        public long? Ssl
         {
             get;
             set;

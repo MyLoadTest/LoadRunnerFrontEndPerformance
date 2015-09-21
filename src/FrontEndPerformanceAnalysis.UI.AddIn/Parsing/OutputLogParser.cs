@@ -271,7 +271,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             _internalIdToHarEntryMap.EnsureNotNull().Add(internalId, harEntry);
         }
 
-        private void FetchRequestHeaders(IPEndPoint sourceEndpoint, IPEndPoint targetEndpoint)
+        private void FetchRequestHeaders(
+            long connectTimeInMilliseconds,
+            IPEndPoint sourceEndpoint,
+            IPEndPoint targetEndpoint)
         {
             FetchLine();
             var match = _line.MatchAgainst(ParsingHelper.RequestHeadersMarkerRegex);
@@ -307,6 +310,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 Url = url
             };
 
+            var harEntryTimings = new HarEntryTimings
+            {
+                Blocked = HarConstants.NotApplicableTiming,
+                Dns = HarConstants.NotApplicableTiming,
+                Connect = connectTimeInMilliseconds
+            };
+
             var harEntry = new HarEntry
             {
                 PageRef = _harPage.Id,
@@ -314,7 +324,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 ServerIPAddress = targetEndpoint.Address.ToString(),
                 StartedDateTime = startTime,
                 Request = harRequest,
-                Response = new HarResponse()
+                Response = new HarResponse(),
+                Timings = harEntryTimings
             };
 
             AddHarEntry(internalId, harEntry);
@@ -455,6 +466,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                         .GetSucceededGroupValue(ParsingHelper.TargetEndpointGroupName)
                         .ParseEndPoint();
 
+                    var connectTimeInMilliseconds =
+                        connectedSocketMatch.GetSucceededGroupValue(ParsingHelper.DurationGroupName).ParseLong();
+
                     var socketData = new SocketData
                     {
                         SourceEndpoint = sourceEndpoint,
@@ -465,7 +479,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
                     _socketIdToDataMap.EnsureNotNull().Add(socketId, socketData);
 
-                    FetchRequestHeaders(sourceEndpoint, targetEndpoint);
+                    FetchRequestHeaders(connectTimeInMilliseconds, sourceEndpoint, targetEndpoint);
                     continue;
                 }
 
@@ -484,7 +498,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                             $"Socket data for the already connected socket {socketId} was not found.");
                     }
 
-                    FetchRequestHeaders(socketData.SourceEndpoint, socketData.TargetEndpoint);
+                    FetchRequestHeaders(0, socketData.SourceEndpoint, socketData.TargetEndpoint);
                     continue;
                 }
 
@@ -497,6 +511,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
                 //// TODO [vmcl] Parse request body
                 //// TODO [vmcl] Parse response body
+
+                //// TODO [vmcl] Parse 'Request done "..."' - URL would be the key to search for an entry
 
                 Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_line}");
             }

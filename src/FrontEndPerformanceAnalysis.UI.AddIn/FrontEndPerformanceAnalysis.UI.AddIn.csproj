@@ -85,6 +85,7 @@
     <Compile Include="Converters\MatchedValueToVisibilityConverter.cs" />
     <Compile Include="Har\HarCache.cs" />
     <Compile Include="Har\HarCacheInfo.cs" />
+    <Compile Include="Har\HarConstants.cs" />
     <Compile Include="Har\HarContent.cs" />
     <Compile Include="Har\HarCookie.cs" />
     <Compile Include="Har\HarCreator.cs" />
