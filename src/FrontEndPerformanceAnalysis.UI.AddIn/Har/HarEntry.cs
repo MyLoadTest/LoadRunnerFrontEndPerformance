@@ -21,7 +21,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
         }
 
         [DataMember(Name = "time")]
-        public decimal? Time
+        public long? Time
         {
             get;
             set;
@@ -67,6 +67,32 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
         {
             get;
             set;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public void ComputeTime()
+        {
+            if (Timings == null)
+            {
+                Time = HarConstants.NotApplicableTiming;
+                return;
+            }
+
+            // The Ssl timing is supposed to be included in the Connect timing (for compatibility with HAR 1.1)
+            var all = new[]
+            {
+                Timings.Blocked,
+                Timings.Connect,
+                Timings.Dns,
+                Timings.Receive,
+                Timings.Send,
+                Timings.Wait
+            };
+
+            Time = all.Select(value => value.GetValueOrDefault()).Where(value => value > 0).Sum();
         }
 
         #endregion

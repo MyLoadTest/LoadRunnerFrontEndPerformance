@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -39,6 +40,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         public const string HttpStatusCodeGroupName = "HttpStatusCode";
         public const string HttpReasonPhraseGroupName = "HttpReasonPhrase";
 
+        public const string ResponseBodyTypeGroupName = "ResponseBodyType";
+
+        #endregion
+
+        #region Constants and Fields: General
+
+        private const RegexOptions DefaultRegexOptions =
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture;
+
         #endregion
 
         #region Constants and Fields: Patterns
@@ -65,6 +75,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         private static readonly string IPAddressAndPortPattern = $@"{IPAddressPattern}\:{PortPattern}";
 
+        private const string ResponseBodyTypePatternDefault = "";
+        private const string ResponseBodyTypePatternChunked = "chunked ";
+        private const string ResponseBodyTypePatternEncoded = "ENCODED ";
+        private const string ResponseBodyTypePatternDecoded = "DECODED ";
+
         #endregion
 
         #region Constants and Fields: Regular Expressions
@@ -74,65 +89,101 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 DateMonthPattern})\-(?<{DateDayGroupName}>{DateDayPattern}) (?<{DateHourGroupName}>{DateHourPattern
                 })\:(?<{DateMinuteGroupName}>{DateMinutePattern})\:(?<{DateSecondGroupName}>{DateSecondPattern
                 })\s+\[MsgId\: MMSG\-\d+\]$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex IPEndPointRegex = new Regex(
             $@"(?<{IPAddressGroupName}>{IPAddressPattern})\:(?<{PortGroupName}>{PortPattern})",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex TransactionStartRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} Notify\: Transaction \""(?<{NameGroupName}>[^""]+)\"" started\.$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex TransactionEndRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} Notify\: Transaction \""(?<{NameGroupName
                 }>[^""]+)\"" ended with a \""(?<{StatusGroupName
                 }>[^""]+)\"" status \(Duration: (?<{DurationGroupName}>{DecimalNumberPattern}) Wasted Time: (?<{
                 WastedTimeGroupName}>{DecimalNumberPattern})\)\.$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex ConnectedSocketRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Connected socket \[(?<{
                 SocketIdGroupName}>{SocketIdPattern})\] from (?<{SourceEndpointGroupName}>{IPAddressAndPortPattern
                 }) to (?<{TargetEndpointGroupName}>{IPAddressAndPortPattern}) in (?<{DurationGroupName
                 }>\d+) ms\s+\[MsgId\: MMSG\-\d+\]$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex AlreadyConnectedRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Already connected \[(?<{
                 SocketIdGroupName}>{SocketIdPattern})\] to \S*?\s+\[MsgId\: MMSG\-\d+\]$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex RequestHeadersMarkerRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: (?<{SizeGroupName
-                }>\d+)-byte request headers for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
+                }>\d+)\-byte request headers for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
                 }>\d*)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex MultiLineRegex = new Regex(
             $@"{FileAndPositionPrefixPattern}\s{{5}}(?<{ValueGroupName}>.*)$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex HttpRequestLineRegex = new Regex(
             $@"^(?<{HttpMethodGroupName}>{HttpRequestLineElementPattern})\s+(?<{
                 UrlGroupName}>{HttpRequestLineElementPattern})\s+HTTP/(?<{HttpVersionGroupName}>{
                 HttpVersionPattern})\s*$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex HttpHeaderRegex = new Regex(
             $@"^(?<{NameGroupName}>[^:]+)\s*\:\s*(?<{ValueGroupName}>.*?)$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex ResponseHeadersMarkerRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: (?<{SizeGroupName
-                }>\d+)-byte response headers for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
+                }>\d+)\-byte response headers for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
                 }>\d*)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
 
         public static readonly Regex HttpStatusLineRegex = new Regex(
             $@"^\s*HTTP/(?<{HttpVersionGroupName}>{HttpVersionPattern})\s+(?<{HttpStatusCodeGroupName}>{
                 HttpStatusCodePattern})\s+(?<{HttpReasonPhraseGroupName}>{HttpReasonPhrasePattern})$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            DefaultRegexOptions);
+
+        public static readonly Regex EncodedResponseBodyReceivedRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: (?<{SizeGroupName}>\d+)\-byte (?<{
+                ResponseBodyTypeGroupName}>{ResponseBodyTypePatternEncoded})response body received for ""(?<{
+                UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName}>\d*)\, Internal ID\=(?<{
+                InternalIdGroupName}>\d+)\)$",
+            DefaultRegexOptions);
+
+        public static readonly Regex ResponseBodyMarkerRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: (?<{SizeGroupName
+                }>\d+)\-byte (?<{ResponseBodyTypeGroupName}>{ResponseBodyTypePatternEncoded}|{
+                ResponseBodyTypePatternDecoded}|{ResponseBodyTypePatternChunked}|{ResponseBodyTypePatternDefault
+                })response body for ""(?<{UrlGroupName}>[^""]+)"" \(RelFrameId\=(?<{FrameIdGroupName
+                }>\d*)\, Internal ID\=(?<{InternalIdGroupName}>\d+)\)$",
+            DefaultRegexOptions);
+
+        public static readonly Regex RequestDoneRegex = new Regex(
+            $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Request done ""(?<{UrlGroupName
+                }>[^""]+)""\s+\[MsgId\: MMSG\-\d+\]$",
+            DefaultRegexOptions);
+
+        #endregion
+
+        #region Constants and Fields
+
+        private static readonly Dictionary<ResponseBodyType, string> ResponseBodyTypeToPatternMap =
+            new Dictionary<ResponseBodyType, string>
+            {
+                { ResponseBodyType.Default, ResponseBodyTypePatternDefault },
+                { ResponseBodyType.Chunked, ResponseBodyTypePatternChunked },
+                { ResponseBodyType.Encoded, ResponseBodyTypePatternEncoded },
+                { ResponseBodyType.Decoded, ResponseBodyTypePatternDecoded }
+            };
+
+        private static readonly Dictionary<string, ResponseBodyType> PatternToResponseBodyTypeMap =
+            ResponseBodyTypeToPatternMap.ReverseDictionary(StringComparer.OrdinalIgnoreCase);
 
         #endregion
 
@@ -237,7 +288,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             #endregion
@@ -258,6 +309,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         public static int ParseInt([NotNull] this string value)
         {
             return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        }
+
+        public static ResponseBodyType GetResponseBodyType([NotNull] Match match)
+        {
+            #region Argument Check
+
+            if (match == null)
+            {
+                throw new ArgumentNullException(nameof(match));
+            }
+
+            #endregion
+
+            var responseBodyTypeString = match.GetSucceededGroupValue(ResponseBodyTypeGroupName);
+            return PatternToResponseBodyTypeMap[responseBodyTypeString];
         }
 
         #endregion

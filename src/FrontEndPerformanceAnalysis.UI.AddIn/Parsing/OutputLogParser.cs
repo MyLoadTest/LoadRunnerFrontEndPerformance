@@ -27,6 +27,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private List<HarPage> _harPages;
         private List<HarEntry> _harEntries;
         private Dictionary<long, HarEntry> _internalIdToHarEntryMap;
+        private Dictionary<string, HarEntry> _urlToOpenRequestHarEntryMap;
         private HarPage _harPage;
         private string _line;
         private int _lineIndex;
@@ -200,6 +201,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             var harLog = _transactionInfo.HarRoot.EnsureNotNull().Log.EnsureNotNull();
 
+            _harEntries.DoForEach(entry => entry.ComputeTime());
+
             harLog.Pages = _harPages.EnsureNotNull().ToArray();
             harLog.Entries = _harEntries.EnsureNotNull().ToArray();
 
@@ -210,6 +213,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             _harPages = null;
             _harEntries = null;
             _internalIdToHarEntryMap = null;
+            _urlToOpenRequestHarEntryMap = null;
             _socketIdToDataMap = null;
         }
 
@@ -240,6 +244,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             _harPages = new List<HarPage>();
             _harEntries = new List<HarEntry>();
             _internalIdToHarEntryMap = new Dictionary<long, HarEntry>();
+            _urlToOpenRequestHarEntryMap = new Dictionary<string, HarEntry>(StringComparer.Ordinal);
             _socketIdToDataMap = new Dictionary<int, SocketData>();
 
             return result;
@@ -260,15 +265,27 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
         }
 
-        private void AddHarEntry(long internalId, HarEntry harEntry)
+        private void AddHarEntry(HarEntry harEntry, long internalId, string url)
         {
+            #region Argument Check
+
             if (harEntry == null)
             {
                 throw new ArgumentNullException(nameof(harEntry));
             }
 
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                throw new ArgumentException(
+                    @"The value can be neither empty nor whitespace-only string nor null.",
+                    nameof(url));
+            }
+
+            #endregion
+
             _harEntries.EnsureNotNull().Add(harEntry);
             _internalIdToHarEntryMap.EnsureNotNull().Add(internalId, harEntry);
+            _urlToOpenRequestHarEntryMap.EnsureNotNull().Add(url, harEntry);
         }
 
         private void FetchRequestHeaders(
@@ -307,14 +324,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             var harRequest = new HarRequest
             {
                 HeadersSize = size,
-                Url = url
+                Url = url,
+                BodySize = 0
             };
 
             var harEntryTimings = new HarEntryTimings
             {
                 Blocked = HarConstants.NotApplicableTiming,
                 Dns = HarConstants.NotApplicableTiming,
-                Connect = connectTimeInMilliseconds
+                Connect = connectTimeInMilliseconds,
+                Ssl = HarConstants.NotApplicableTiming
             };
 
             var harEntry = new HarEntry
@@ -324,11 +343,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 ServerIPAddress = targetEndpoint.Address.ToString(),
                 StartedDateTime = startTime,
                 Request = harRequest,
-                Response = new HarResponse(),
+                Response = new HarResponse { BodySize = 0 },
                 Timings = harEntryTimings
             };
 
-            AddHarEntry(internalId, harEntry);
+            AddHarEntry(harEntry, internalId, url);
 
             var multilineString = FetchMultipleLines();
 
@@ -509,10 +528,62 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     continue;
                 }
 
-                //// TODO [vmcl] Parse request body
-                //// TODO [vmcl] Parse response body
+                var encodedResponseBodyReceivedMatch =
+                    _line.MatchAgainst(ParsingHelper.EncodedResponseBodyReceivedRegex);
+                if (encodedResponseBodyReceivedMatch.Success)
+                {
+                    var responseBodyType = ParsingHelper.GetResponseBodyType(encodedResponseBodyReceivedMatch);
+                    Debug.WriteLine(responseBodyType);
 
-                //// TODO [vmcl] Parse 'Request done "..."' - URL would be the key to search for an entry
+                    //// TODO [vmcl] Parse the parameters (size etc.)
+
+                    continue;
+                }
+
+                var responseBodyMarkerRegexMatch = _line.MatchAgainst(ParsingHelper.ResponseBodyMarkerRegex);
+                if (responseBodyMarkerRegexMatch.Success)
+                {
+                    var responseBodyType = ParsingHelper.GetResponseBodyType(responseBodyMarkerRegexMatch);
+                    Debug.WriteLine(responseBodyType);
+
+                    //// TODO [vmcl] Parse response body
+
+                    continue;
+                }
+
+                //// TODO [vmcl] Parse request body
+
+                var requestDoneMatch = _line.MatchAgainst(ParsingHelper.RequestDoneRegex);
+                if (requestDoneMatch.Success)
+                {
+                    var url = requestDoneMatch.GetSucceededGroupValue(ParsingHelper.UrlGroupName);
+
+                    var timestampOffset =
+                        TimeSpan.FromMilliseconds(
+                            requestDoneMatch.GetSucceededGroupValue(ParsingHelper.TimestampGroupName).ParseLong());
+
+                    var doneTime = _scriptStartTime.EnsureNotNull() + timestampOffset;
+
+                    var harEntry = _urlToOpenRequestHarEntryMap.EnsureNotNull().GetValueOrDefault(url);
+                    if (harEntry == null)
+                    {
+                        throw new InvalidOperationException(
+                            $@"Cannot find a corresponding entry for the completed request ""{url}"" (line {_lineIndex
+                                }).");
+                    }
+
+                    var elapsed = doneTime - harEntry.StartedDateTime.EnsureNotNull();
+                    var timings = harEntry.Timings.EnsureNotNull();
+
+                    //// TODO [vitalii.maklai] Discuss with Stuart
+                    // It seems that it's technically impossible to find out all the send/wait/receive timings from
+                    // the VuGen's output log
+                    timings.Send = 0;
+                    timings.Wait = 0;
+                    timings.Receive = (long)elapsed.TotalMilliseconds;
+
+                    continue;
+                }
 
                 Debug.WriteLine($"[{GetType().GetQualifiedName()}] Skipping line: {_line}");
             }

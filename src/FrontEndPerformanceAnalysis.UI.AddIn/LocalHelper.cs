@@ -115,6 +115,31 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
             return DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
         }
 
+        public static Dictionary<TValue, TKey> ReverseDictionary<TKey, TValue>(
+            [NotNull] this Dictionary<TKey, TValue> dictionary,
+            [CanBeNull] IEqualityComparer<TValue> equalityComparer)
+        {
+            #region Argument Check
+
+            if (dictionary == null)
+            {
+                throw new ArgumentNullException(nameof(dictionary));
+            }
+
+            #endregion
+
+            return dictionary.ToDictionary(
+                pair => pair.Value,
+                pair => pair.Key,
+                equalityComparer ?? EqualityComparer<TValue>.Default);
+        }
+
+        public static Dictionary<TValue, TKey> ReverseDictionary<TKey, TValue>(
+            [NotNull] this Dictionary<TKey, TValue> dictionary)
+        {
+            return dictionary.ReverseDictionary(null);
+        }
+
         #endregion
     }
 }

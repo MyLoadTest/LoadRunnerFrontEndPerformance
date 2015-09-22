@@ -116,6 +116,7 @@
     <Compile Include="Pads\AnalysisPad.cs" />
     <Compile Include="Parsing\MultilineString.cs" />
     <Compile Include="Parsing\ParsingHelper.cs" />
+    <Compile Include="Parsing\ResponseBodyType.cs" />
     <Compile Include="Parsing\TransactionInfo.cs" />
     <Compile Include="Parsing\OutputLogParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
