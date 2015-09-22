@@ -209,7 +209,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             var group = groupCollection[groupName].EnsureNotNull();
             if (!@group.Success)
             {
-                throw new InvalidOperationException($"The group '{groupName}' was supposed to succeed.");
+                throw new InvalidOperationException($@"The group '{groupName}' was supposed to succeed.");
             }
 
             return @group;
@@ -223,6 +223,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             if (match == null)
             {
                 throw new ArgumentNullException(nameof(match));
+            }
+
+            if (!match.Success)
+            {
+                throw new ArgumentException(@"The specified match was supposed to succeed.", nameof(match));
             }
 
             #endregion

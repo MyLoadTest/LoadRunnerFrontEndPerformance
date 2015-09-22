@@ -8,7 +8,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
     [DataContract]
     [DebuggerDisplay(
         "{GetType().Name,nq}. PageRef = {PageRef}, ConnectionId = {ConnectionId}"
-            + ", ServerIPAddress = {ServerIPAddress}, Request.Url = {Request?.Url}")]
+            + ", ServerIPAddress = {ServerIPAddress}, Time = {Time}, Request.Url = {Request?.Url}")]
     internal sealed class HarEntry : HarTimestampedObject
     {
         #region Public Properties
@@ -21,7 +21,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Har
         }
 
         [DataMember(Name = "time")]
-        public long? Time
+        public decimal? Time
         {
             get;
             set;

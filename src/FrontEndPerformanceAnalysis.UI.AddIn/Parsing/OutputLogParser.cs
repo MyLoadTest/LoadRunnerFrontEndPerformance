@@ -380,7 +380,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     $"Page could not be determined for the response headers at line {_lineIndex}.");
             }
 
-            var harEntry = _internalIdToHarEntryMap.GetValueOrDefault(internalId);
+            var harEntry = _internalIdToHarEntryMap.EnsureNotNull().GetValueOrDefault(internalId);
             if (harEntry == null)
             {
                 throw new InvalidOperationException(
@@ -411,6 +411,28 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
             var harHeaders = ParseHttpHeaders(multilineString);
             harResponse.Headers = harHeaders;
+        }
+
+        private void ProcessResponseSize([NotNull] Match responseBodyMatch)
+        {
+            var responseBodyType = ParsingHelper.GetResponseBodyType(responseBodyMatch);
+            if (responseBodyType == ResponseBodyType.Decoded)
+            {
+                return;
+            }
+
+            var size = responseBodyMatch.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
+            var internalId = responseBodyMatch.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
+
+            var harEntry = _internalIdToHarEntryMap.EnsureNotNull().GetValueOrDefault(internalId);
+            if (harEntry == null)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot find an entry with Internal ID = {internalId} (line {_lineIndex}).");
+            }
+
+            var harResponse = harEntry.Response.EnsureNotNull();
+            harResponse.BodySize = harResponse.BodySize.GetValueOrDefault() + size;
         }
 
         private void ParseInternal()
@@ -532,22 +554,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     _line.MatchAgainst(ParsingHelper.EncodedResponseBodyReceivedRegex);
                 if (encodedResponseBodyReceivedMatch.Success)
                 {
-                    var responseBodyType = ParsingHelper.GetResponseBodyType(encodedResponseBodyReceivedMatch);
-                    Debug.WriteLine(responseBodyType);
-
-                    //// TODO [vmcl] Parse the parameters (size etc.)
-
+                    ProcessResponseSize(encodedResponseBodyReceivedMatch);
                     continue;
                 }
 
                 var responseBodyMarkerRegexMatch = _line.MatchAgainst(ParsingHelper.ResponseBodyMarkerRegex);
                 if (responseBodyMarkerRegexMatch.Success)
                 {
-                    var responseBodyType = ParsingHelper.GetResponseBodyType(responseBodyMarkerRegexMatch);
-                    Debug.WriteLine(responseBodyType);
+                    ProcessResponseSize(responseBodyMarkerRegexMatch);
 
-                    //// TODO [vmcl] Parse response body
-
+                    //// TODO [vmcl] Parse response body (content)
                     continue;
                 }
 
@@ -580,7 +596,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     // the VuGen's output log
                     timings.Send = 0;
                     timings.Wait = 0;
-                    timings.Receive = (long)elapsed.TotalMilliseconds;
+                    timings.Receive = (decimal)elapsed.TotalMilliseconds;
 
                     continue;
                 }
