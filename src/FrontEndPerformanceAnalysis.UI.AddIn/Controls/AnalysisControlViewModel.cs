@@ -3,14 +3,16 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Threading;
+using HP.LR.VuGen.ServiceCore;
+using HP.LR.VuGen.ServiceCore.Interfaces;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings.PageSpeed;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 using Omnifactotum;
 using Omnifactotum.Annotations;
@@ -24,8 +26,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
     {
         #region Constants and Fields
 
-        private static readonly DependencyPropertyKey TransactionNamesPropertyKey =
-            RegisterReadOnlyDependencyProperty(obj => obj.TransactionNames);
+        private const string OutputLogFileName = @"output.txt";
+
+        private static readonly DependencyPropertyKey TransactionsPropertyKey =
+            RegisterReadOnlyDependencyProperty(obj => obj.Transactions);
 
         private static readonly DependencyPropertyKey ScoreTypesPropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.AnalysisTypes);
@@ -36,10 +40,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         private static readonly DependencyPropertyKey AnalysisErrorMessagePropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.AnalysisErrorMessage);
 
-        private static readonly DependencyProperty SelectedTransactionNameProperty =
+        private static readonly DependencyProperty SelectedTransactionProperty =
             RegisterDependencyProperty(
-                obj => obj.SelectedTransactionName,
-                new PropertyMetadata(null, OnSelectedTransactionNameChanged, OnCoerceSelectedTransactionName));
+                obj => obj.SelectedTransaction,
+                new PropertyMetadata(null, OnSelectedTransactionChanged, OnCoerceSelectedTransaction));
 
         private static readonly DependencyProperty SelectedAnalysisTypeProperty =
             RegisterDependencyProperty(
@@ -51,7 +55,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private static readonly TimeSpan PageSpeedRunTimeout = TimeSpan.FromMinutes(1);
 
-        private readonly List<string> _transactionNamesInternal;
+        private readonly List<TransactionInfo> _transactionInfosInternal;
+        private readonly IVuGenProjectService _projectService;
 
         #endregion
 
@@ -59,8 +64,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         public AnalysisControlViewModel()
         {
-            _transactionNamesInternal = new List<string>();
-            TransactionNames = new CollectionView(_transactionNamesInternal);
+            _projectService = VuGenServiceManager.GetService<IVuGenProjectService>().EnsureNotNull();
+
+            _transactionInfosInternal = new List<TransactionInfo>();
+            Transactions = new CollectionView(_transactionInfosInternal);
 
             var scoreTypesInternal = EnumFactotum
                 .GetAllValues<AnalysisType>()
@@ -82,10 +89,18 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 ExecuteCheckPerformanceCommand,
                 CanExecuteCheckPerformanceCommand);
 
-            TransactionNames.CurrentChanged += TransactionNames_CurrentChanged;
+            Transactions.CurrentChanged += Transactions_CurrentChanged;
             AnalysisTypes.CurrentChanged += AnalysisTypes_CurrentChanged;
 
-            CoerceValue(SelectedTransactionNameProperty);
+            _projectService.LastReplayedRunChanged += (sender, args) => RefreshTransactions();
+            _projectService.ActiveScriptChanged += (sender, args) => RefreshTransactions();
+            _projectService.ScriptOpened += (sender, args) => RefreshTransactions();
+            _projectService.ScriptClosed += (sender, args) => RefreshTransactions();
+            _projectService.SolutionClosed += (sender, args) => RefreshTransactions();
+
+            RefreshTransactions();
+
+            CoerceValue(SelectedTransactionProperty);
             CoerceValue(SelectedAnalysisTypeProperty);
         }
 
@@ -93,12 +108,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Public Properties
 
-        public static DependencyProperty TransactionNamesProperty
+        public static DependencyProperty TransactionsProperty
         {
             [DebuggerNonUserCode]
             get
             {
-                return TransactionNamesPropertyKey.DependencyProperty;
+                return TransactionsPropertyKey.DependencyProperty;
             }
         }
 
@@ -130,16 +145,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [NotNull]
-        public ICollectionView TransactionNames
+        public CollectionView Transactions
         {
             get
             {
-                return (ICollectionView)GetValue(TransactionNamesProperty);
+                return (CollectionView)GetValue(TransactionsProperty);
             }
 
             private set
             {
-                SetValue(TransactionNamesPropertyKey, value);
+                SetValue(TransactionsPropertyKey, value);
             }
         }
 
@@ -186,16 +201,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [CanBeNull]
-        public string SelectedTransactionName
+        public TransactionInfo SelectedTransaction
         {
             get
             {
-                return (string)GetValue(SelectedTransactionNameProperty);
+                return (TransactionInfo)GetValue(SelectedTransactionProperty);
             }
 
             set
             {
-                SetValue(SelectedTransactionNameProperty, value);
+                SetValue(SelectedTransactionProperty, value);
             }
         }
 
@@ -223,26 +238,20 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Public Methods
 
-        public void SetTransactionNames([NotNull] ICollection<string> transactionNames)
+        public void RefreshTransactions()
         {
-            #region Argument Check
-
-            if (transactionNames == null)
+            try
             {
-                throw new ArgumentNullException(nameof(transactionNames));
+                RefreshTransactionsInternal();
+            }
+            finally
+            {
+                Transactions.Refresh();
             }
 
-            if (transactionNames.Any(item => item == null))
+            if (!Transactions.IsEmpty)
             {
-                throw new ArgumentException(@"The collection contains a null element.", nameof(transactionNames));
-            }
-
-            #endregion
-
-            using (TransactionNames.DeferRefresh())
-            {
-                _transactionNamesInternal.Clear();
-                transactionNames.DoForEach(_transactionNamesInternal.Add);
+                Transactions.MoveCurrentToFirst();
             }
         }
 
@@ -250,16 +259,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Private Methods
 
-        private static void OnSelectedTransactionNameChanged(
+        private static void OnSelectedTransactionChanged(
             DependencyObject obj,
             DependencyPropertyChangedEventArgs args)
         {
-            ((AnalysisControlViewModel)obj).OnSelectedTransactionNameChanged(args);
+            ((AnalysisControlViewModel)obj).OnSelectedTransactionChanged(args);
         }
 
-        private static object OnCoerceSelectedTransactionName(DependencyObject obj, object baseValue)
+        private static object OnCoerceSelectedTransaction(DependencyObject obj, object baseValue)
         {
-            return ((AnalysisControlViewModel)obj).OnCoerceSelectedTransactionName();
+            return ((AnalysisControlViewModel)obj).OnCoerceSelectedTransaction();
         }
 
         private static void OnSelectedAnalysisTypeChanged(
@@ -284,11 +293,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 throw analysisType.CreateEnumValueNotImplementedException();
             }
 
-            var arguments = string.Format(
-                CultureInfo.InvariantCulture,
-                @"-input_file ""{0}"" -output_file ""{1}"" -output_format formatted_json -strategy desktop",
-                inputFilePath,
-                outputFilePath);
+            var arguments =
+                $@"-input_file ""{inputFilePath}"" -output_file ""{outputFilePath
+                    }"" -output_format formatted_json -strategy desktop";
 
             var startInfo = new ProcessStartInfo(PageSpeedExecutablePath, arguments)
             {
@@ -303,10 +310,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 if (process == null)
                 {
                     throw new InvalidOperationException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            @"Unable to run the required tool ""{0}"".",
-                            PageSpeedExecutablePath));
+                        $@"Unable to run the required tool ""{PageSpeedExecutablePath}"".");
                 }
 
                 var waitResult = process.WaitForExit((int)PageSpeedRunTimeout.TotalMilliseconds);
@@ -315,11 +319,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                     process.KillNoThrow();
 
                     throw new InvalidOperationException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            @"The tool ""{0}"" has not exited after {1}.",
-                            PageSpeedExecutablePath,
-                            PageSpeedRunTimeout));
+                        $@"The tool ""{PageSpeedExecutablePath}"" has not exited after {PageSpeedRunTimeout}.");
+                }
+
+                var exitCode = process.ExitCode;
+                if (exitCode != 0)
+                {
+                    throw new InvalidOperationException(
+                        $@"The tool ""{PageSpeedExecutablePath}"" has exited with the code {exitCode}.");
                 }
             }
 
@@ -327,14 +334,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             return pageSpeedOutput;
         }
 
-        private void OnSelectedTransactionNameChanged(DependencyPropertyChangedEventArgs args)
+        private void OnSelectedTransactionChanged(DependencyPropertyChangedEventArgs args)
         {
-            TransactionNames.MoveCurrentTo(args.NewValue);
+            Transactions.MoveCurrentTo(args.NewValue);
         }
 
-        private object OnCoerceSelectedTransactionName()
+        private object OnCoerceSelectedTransaction()
         {
-            return (string)TransactionNames.CurrentItem;
+            return (TransactionInfo)Transactions.CurrentItem;
         }
 
         private void OnSelectedAnalysisTypeChanged(DependencyPropertyChangedEventArgs args)
@@ -351,10 +358,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             return currentItem?.Value;
         }
 
-        private void TransactionNames_CurrentChanged(object sender, EventArgs eventArgs)
+        private void Transactions_CurrentChanged(object sender, EventArgs eventArgs)
         {
             CheckPerformanceCommand.RaiseCanExecuteChanged();
-            CoerceValue(SelectedTransactionNameProperty);
+            CoerceValue(SelectedTransactionProperty);
         }
 
         private void AnalysisTypes_CurrentChanged(object sender, EventArgs eventArgs)
@@ -365,7 +372,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private bool CanExecuteCheckPerformanceCommand(object arg)
         {
-            return SelectedAnalysisType.HasValue && !SelectedTransactionName.IsNullOrWhiteSpace()
+            return SelectedAnalysisType.HasValue && SelectedTransaction != null
                 && !CheckPerformanceCommand.IsExecuting;
         }
 
@@ -382,11 +389,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                     throw;
                 }
 
-                var errorMessage = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "Error has occurred:{0}{0}{1}",
-                    Environment.NewLine,
-                    ex);
+                var errorMessage = $"Error has occurred:{Environment.NewLine}{Environment.NewLine}{ex}";
 
                 Dispatcher.Invoke(() => AnalysisErrorMessage = errorMessage, DispatcherPriority.Render);
                 Dispatcher.Invoke(() => PageSpeedResult = null, DispatcherPriority.Render);
@@ -396,9 +399,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         private void ExecuteCheckPerformanceCommandInternal()
         {
             var selectedScoreType = Dispatcher.Invoke(() => SelectedAnalysisType, DispatcherPriority.Send);
-            var selectedTransactionName = Dispatcher.Invoke(() => SelectedTransactionName, DispatcherPriority.Send);
+            var selectedTransaction = Dispatcher.Invoke(() => SelectedTransaction, DispatcherPriority.Send);
 
-            if (!selectedScoreType.HasValue || selectedTransactionName == null)
+            if (!selectedScoreType.HasValue || selectedTransaction == null)
             {
                 return;
             }
@@ -417,13 +420,52 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 var outputFilePath = inputFilePath + ".json";
                 tempFileCollection.AddFile(outputFilePath, false);
 
-                var fileData = LocalHelper.GetTestHarFile(selectedTransactionName);
-                File.WriteAllBytes(inputFilePath, fileData);
+                using (var stream = File.Create(inputFilePath))
+                {
+                    selectedTransaction.HarRoot.Serialize(stream);
+                }
 
                 pageSpeedOutput = RunTools(selectedScoreType.Value, inputFilePath, outputFilePath);
             }
 
             Dispatcher.Invoke(() => PageSpeedResult = pageSpeedOutput, DispatcherPriority.Render);
+        }
+
+        private void RefreshTransactionsInternal()
+        {
+            _transactionInfosInternal.Clear();
+
+            var script = _projectService.GetActiveScript();
+            if (script == null)
+            {
+                return;
+            }
+
+            var scriptFilePath = script.FileName;
+            if (scriptFilePath.IsNullOrWhiteSpace())
+            {
+                return;
+            }
+
+            var scriptDirectory = Path.GetDirectoryName(scriptFilePath);
+            if (scriptDirectory.IsNullOrWhiteSpace())
+            {
+                return;
+            }
+
+            var outputLogFilePath = Path.Combine(scriptDirectory.EnsureNotNull(), OutputLogFileName);
+            if (!File.Exists(outputLogFilePath))
+            {
+                return;
+            }
+
+            TransactionInfo[] transactionInfos;
+            using (var parser = new OutputLogParser(outputLogFilePath))
+            {
+                transactionInfos = parser.Parse();
+            }
+
+            transactionInfos.DoForEach(_transactionInfosInternal.Add);
         }
 
         #endregion

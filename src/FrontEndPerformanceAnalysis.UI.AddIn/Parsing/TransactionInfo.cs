@@ -6,7 +6,7 @@ using Omnifactotum.Annotations;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 {
-    [DebuggerDisplay("{GetType().Name,nq}: Name = {Name}")]
+    [DebuggerDisplay("{GetType().Name,nq}. Name = {Name}")]
     internal sealed class TransactionInfo
     {
         #region Constructors

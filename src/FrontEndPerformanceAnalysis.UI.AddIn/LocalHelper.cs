@@ -30,11 +30,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 
             #endregion
 
-            var name = string.Format(
-                CultureInfo.InvariantCulture,
-                "Enum_{0}_{1}",
-                value.GetType().GetQualifiedName(),
-                value.GetName());
+            var name = $"Enum_{value.GetType().GetQualifiedName()}_{value.GetName()}";
 
             var translation = Resources.ResourceManager.GetString(name);
 
@@ -44,23 +40,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
             }
 
             return translation;
-        }
-
-        public static byte[] GetTestHarFile([NotNull] string harName)
-        {
-            #region Argument Check
-
-            if (string.IsNullOrWhiteSpace(harName))
-            {
-                throw new ArgumentException(
-                    @"The value can be neither empty nor whitespace-only string nor null.",
-                    "harName");
-            }
-
-            #endregion
-
-            var name = string.Format(CultureInfo.InvariantCulture, "HAR_{0}", harName);
-            return (byte[])Resources.ResourceManager.GetObject(name).EnsureNotNull();
         }
 
         public static bool PathHasInvalidChars([NotNull] string path)

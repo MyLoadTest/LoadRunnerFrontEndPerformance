@@ -343,7 +343,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 ServerIPAddress = targetEndpoint.Address.ToString(),
                 StartedDateTime = startTime,
                 Request = harRequest,
-                Response = new HarResponse { BodySize = 0 },
+                Response = new HarResponse { BodySize = 0, Content = new HarContent() },
                 Timings = harEntryTimings
             };
 

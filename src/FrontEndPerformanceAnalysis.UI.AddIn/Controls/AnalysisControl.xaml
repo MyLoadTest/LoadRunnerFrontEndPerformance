@@ -7,6 +7,7 @@
         xmlns:self="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn"
         xmlns:controls="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls"
         xmlns:converters="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Converters"
+        xmlns:parsing="clr-namespace:MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing"
         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch"
         VerticalContentAlignment="Stretch" Background="{x:Static SystemColors.ControlBrush}"
         Foreground="{x:Static SystemColors.ControlTextBrush}"
@@ -82,15 +83,22 @@
                     Target="{Binding ElementName=ScoreTypeComboBox}" />
             <GridSplitter Grid.Row="0" Grid.Column="3" Grid.RowSpan="2" />
             <ComboBox Grid.Row="1" Grid.Column="0" Style="{StaticResource OptionControlStyle}" MinWidth="100"
-                    Name="TransactionNameComboBox" ItemsSource="{Binding TransactionNames}"
-                    IsSynchronizedWithCurrentItem="True" />
+                    Name="TransactionNameComboBox" ItemsSource="{Binding Transactions,Mode=OneWay}"
+                    IsSynchronizedWithCurrentItem="True" IsReadOnly="True">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="parsing:TransactionInfo">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
             <ComboBox Grid.Row="1" Grid.Column="2" Style="{StaticResource OptionControlStyle}" MinWidth="100"
                     Name="ScoreTypeComboBox" ItemsSource="{Binding AnalysisTypes}" IsSynchronizedWithCurrentItem="True" />
             <Button Grid.Row="1" Grid.Column="4" Content="_Check Performance"
                     Command="{Binding CheckPerformanceCommand}" />
         </Grid>
 
-        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" Background="Beige">
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0"
+                Background="Beige">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -111,7 +119,8 @@
                     IsSynchronizedWithCurrentItem="True">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Rule" MinWidth="120" Width="*" Binding="{Binding LocalizedRuleName}" />
-                    <DataGridTextColumn Header="Impact" MinWidth="100" Width="Auto" Binding="{Binding RuleImpact,StringFormat={}{0:F3}}" />
+                    <DataGridTextColumn Header="Impact" MinWidth="100" Width="Auto"
+                            Binding="{Binding RuleImpact,StringFormat={}{0:F3}}" />
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

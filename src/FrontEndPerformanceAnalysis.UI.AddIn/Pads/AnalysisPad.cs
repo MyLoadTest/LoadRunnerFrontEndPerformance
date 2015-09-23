@@ -18,9 +18,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Pads
         public AnalysisPad()
         {
             _innerControl = new AnalysisControl();
-
-            //// TODO: Remove this temporary code used for pre-testing
-            _innerControl.ViewModel.SetTransactionNames("Sample".AsArray());
         }
 
         #endregion

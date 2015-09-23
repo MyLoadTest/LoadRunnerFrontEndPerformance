@@ -9,10 +9,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn</RootNamespace>
     <AssemblyName>MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,6 +40,22 @@
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="HP.LR.VuGen.ProjectSystem">
+      <HintPath>..\..\lib\VuGen\HP.LR.VuGen.ProjectSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="HP.LR.VuGen.ServiceCore">
+      <HintPath>..\..\lib\VuGen\HP.LR.VuGen.ServiceCore.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="HP.Utt.Core">
+      <HintPath>..\..\lib\VuGen\HP.Utt.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="HP.Utt.ProjectSystem">
+      <HintPath>..\..\lib\VuGen\HP.Utt.ProjectSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="ICSharpCode.Core">
       <HintPath>..\..\lib\SharpDevelop\ICSharpCode.Core.dll</HintPath>
       <Private>False</Private>
