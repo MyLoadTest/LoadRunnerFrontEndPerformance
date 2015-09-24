@@ -22,7 +22,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -61,9 +61,27 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Impact.
+        /// </summary>
+        public static string ColumnName_Impact {
+            get {
+                return ResourceManager.GetString("ColumnName_Impact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Rule.
+        /// </summary>
+        public static string ColumnName_Rule {
+            get {
+                return ResourceManager.GetString("ColumnName_Rule", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Page weight.
         /// </summary>
-        internal static string Enum_AnalysisType_PageWeight {
+        public static string Enum_AnalysisType_PageWeight {
             get {
                 return ResourceManager.GetString("Enum_AnalysisType_PageWeight", resourceCulture);
             }
@@ -72,7 +90,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Score by Page Speed.
         /// </summary>
-        internal static string Enum_AnalysisType_ScoreByPageSpeed {
+        public static string Enum_AnalysisType_ScoreByPageSpeed {
             get {
                 return ResourceManager.GetString("Enum_AnalysisType_ScoreByPageSpeed", resourceCulture);
             }
@@ -81,7 +99,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Score by YSlow.
         /// </summary>
-        internal static string Enum_AnalysisType_ScoreByYSlow {
+        public static string Enum_AnalysisType_ScoreByYSlow {
             get {
                 return ResourceManager.GetString("Enum_AnalysisType_ScoreByYSlow", resourceCulture);
             }
@@ -90,7 +108,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Waterfall.
         /// </summary>
-        internal static string Enum_AnalysisType_Waterfall {
+        public static string Enum_AnalysisType_Waterfall {
             get {
                 return ResourceManager.GetString("Enum_AnalysisType_Waterfall", resourceCulture);
             }
@@ -99,7 +117,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap FrontEndPerformanceAnalysis {
+        public static System.Drawing.Bitmap FrontEndPerformanceAnalysis {
             get {
                 object obj = ResourceManager.GetObject("FrontEndPerformanceAnalysis", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
@@ -109,7 +127,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] HAR_Sample {
+        public static byte[] HAR_Sample {
             get {
                 object obj = ResourceManager.GetObject("HAR_Sample", resourceCulture);
                 return ((byte[])(obj));

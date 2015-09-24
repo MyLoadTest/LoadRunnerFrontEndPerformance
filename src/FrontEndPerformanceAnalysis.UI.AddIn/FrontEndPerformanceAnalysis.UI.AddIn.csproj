@@ -48,9 +48,18 @@
       <HintPath>..\..\lib\VuGen\HP.LR.VuGen.ServiceCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="HP.Utt.Common">
+      <HintPath>..\..\lib\VuGen\HP.Utt.Common.dll</HintPath>
+    </Reference>
     <Reference Include="HP.Utt.Core">
       <HintPath>..\..\lib\VuGen\HP.Utt.Core.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="HP.Utt.Logger">
+      <HintPath>..\..\lib\VuGen\HP.Utt.Logger.dll</HintPath>
+    </Reference>
+    <Reference Include="HP.Utt.PlatformInvoke">
+      <HintPath>..\..\lib\VuGen\HP.Utt.PlatformInvoke.dll</HintPath>
     </Reference>
     <Reference Include="HP.Utt.ProjectSystem">
       <HintPath>..\..\lib\VuGen\HP.Utt.ProjectSystem.dll</HintPath>
@@ -97,9 +106,6 @@
     <Compile Include="Controls\AnalysisControlViewModel.cs" />
     <Compile Include="Controls\ControlItem.cs" />
     <Compile Include="Controls\ControlItem.Helper.cs" />
-    <Compile Include="Converters\MatchedAnalysisTypeToVisibilityConverter.cs" />
-    <Compile Include="Converters\ErrorMessageToVisibilityConverter.cs" />
-    <Compile Include="Converters\MatchedValueToVisibilityConverter.cs" />
     <Compile Include="Har\HarCache.cs" />
     <Compile Include="Har\HarCacheInfo.cs" />
     <Compile Include="Har\HarConstants.cs" />
@@ -154,7 +160,7 @@
     </Compile>
     <Compile Include="AnalysisType.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>

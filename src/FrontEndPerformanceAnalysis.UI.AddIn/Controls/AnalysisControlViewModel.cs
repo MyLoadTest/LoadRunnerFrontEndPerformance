@@ -55,7 +55,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private static readonly TimeSpan PageSpeedRunTimeout = TimeSpan.FromMinutes(1);
 
+        [NotNull]
         private readonly List<TransactionInfo> _transactionInfosInternal;
+
+        [CanBeNull]
         private readonly IVuGenProjectService _projectService;
 
         #endregion
@@ -64,7 +67,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         public AnalysisControlViewModel()
         {
-            _projectService = VuGenServiceManager.GetService<IVuGenProjectService>().EnsureNotNull();
+            _projectService = WpfFactotum.IsInDesignMode()
+                ? null
+                : VuGenServiceManager.GetService<IVuGenProjectService>().EnsureNotNull();
 
             _transactionInfosInternal = new List<TransactionInfo>();
             Transactions = new CollectionView(_transactionInfosInternal);
@@ -92,11 +97,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             Transactions.CurrentChanged += Transactions_CurrentChanged;
             AnalysisTypes.CurrentChanged += AnalysisTypes_CurrentChanged;
 
-            _projectService.LastReplayedRunChanged += (sender, args) => RefreshTransactions();
-            _projectService.ActiveScriptChanged += (sender, args) => RefreshTransactions();
-            _projectService.ScriptOpened += (sender, args) => RefreshTransactions();
-            _projectService.ScriptClosed += (sender, args) => RefreshTransactions();
-            _projectService.SolutionClosed += (sender, args) => RefreshTransactions();
+            if (_projectService != null)
+            {
+                _projectService.LastReplayedRunChanged += (sender, args) => RefreshTransactions();
+                _projectService.ActiveScriptChanged += (sender, args) => RefreshTransactions();
+                _projectService.ScriptOpened += (sender, args) => RefreshTransactions();
+                _projectService.ScriptClosed += (sender, args) => RefreshTransactions();
+                _projectService.SolutionClosed += (sender, args) => RefreshTransactions();
+            }
 
             RefreshTransactions();
 
@@ -435,7 +443,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         {
             _transactionInfosInternal.Clear();
 
-            var script = _projectService.GetActiveScript();
+            var script = _projectService?.GetActiveScript();
             if (script == null)
             {
                 return;
