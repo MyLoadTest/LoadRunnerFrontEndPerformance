@@ -331,6 +331,21 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             return PatternToResponseBodyTypeMap[responseBodyTypeString];
         }
 
+        public static TimeSpan GetTimeOffset([NotNull] Match match)
+        {
+            #region Argument Check
+
+            if (match == null)
+            {
+                throw new ArgumentNullException("match");
+            }
+
+            #endregion
+
+            var result = TimeSpan.FromMilliseconds(match.GetSucceededGroupValue(TimestampGroupName).ParseLong());
+            return result;
+        }
+
         #endregion
     }
 }

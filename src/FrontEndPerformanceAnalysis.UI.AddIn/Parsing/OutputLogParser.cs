@@ -137,6 +137,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
         }
 
+        private DateTimeOffset GetTime([NotNull] Match match)
+        {
+            var timeOffset = ParsingHelper.GetTimeOffset(match);
+
+            var result = _scriptStartTime.EnsureNotNull() + timeOffset;
+            return result;
+        }
+
         private bool FetchLine()
         {
             if (_skipFetchOnce)
@@ -305,9 +313,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             var frameId = match.GetSucceededGroupValue(ParsingHelper.FrameIdGroupName).ParseNullableLong();
             var internalId = match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
 
-            var timestampOffset =
-                TimeSpan.FromMilliseconds(match.GetSucceededGroupValue(ParsingHelper.TimestampGroupName).ParseLong());
-            var startTime = _scriptStartTime.EnsureNotNull() + timestampOffset;
+            var startTime = GetTime(match);
 
             if (frameId.HasValue || _harPage == null)
             {
@@ -333,7 +339,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 Blocked = HarConstants.NotApplicableTiming,
                 Dns = HarConstants.NotApplicableTiming,
                 Connect = connectTimeInMilliseconds,
-                Ssl = HarConstants.NotApplicableTiming
+                Ssl = HarConstants.NotApplicableTiming,
+                Send = 0 //// Currently, it's technically impossible to determine the 'send' timing value
             };
 
             var harEntry = new HarEntry
@@ -390,6 +397,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             var harResponse = harEntry.Response.EnsureNotNull();
             harResponse.HeadersSize = size;
 
+            var timings = harEntry.Timings.EnsureNotNull();
+            var time = GetTime(match);
+            var waitTimeSpan = time - harEntry.StartedDateTime.EnsureNotNull();
+            timings.Wait = (decimal)waitTimeSpan.TotalMilliseconds;
+
             var multilineString = FetchMultipleLines();
 
             var statusLineString = multilineString.Lines.FirstOrDefault();
@@ -413,11 +425,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             harResponse.Headers = harHeaders;
         }
 
-        private void ProcessResponseSize([NotNull] Match responseBodyMatch)
+        private void ProcessResponseBody([NotNull] Match responseBodyMatch)
         {
+            //// TODO [vmcl] Parse response body (content)
+
             var responseBodyType = ParsingHelper.GetResponseBodyType(responseBodyMatch);
             if (responseBodyType == ResponseBodyType.Decoded)
             {
+                //// TODO [vmcl] Determine HarContent.SavedByCompression
                 return;
             }
 
@@ -554,16 +569,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                     _line.MatchAgainst(ParsingHelper.EncodedResponseBodyReceivedRegex);
                 if (encodedResponseBodyReceivedMatch.Success)
                 {
-                    ProcessResponseSize(encodedResponseBodyReceivedMatch);
+                    ProcessResponseBody(encodedResponseBodyReceivedMatch);
                     continue;
                 }
 
                 var responseBodyMarkerRegexMatch = _line.MatchAgainst(ParsingHelper.ResponseBodyMarkerRegex);
                 if (responseBodyMarkerRegexMatch.Success)
                 {
-                    ProcessResponseSize(responseBodyMarkerRegexMatch);
-
-                    //// TODO [vmcl] Parse response body (content)
+                    ProcessResponseBody(responseBodyMarkerRegexMatch);
                     continue;
                 }
 
@@ -574,12 +587,6 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                 {
                     var url = requestDoneMatch.GetSucceededGroupValue(ParsingHelper.UrlGroupName);
 
-                    var timestampOffset =
-                        TimeSpan.FromMilliseconds(
-                            requestDoneMatch.GetSucceededGroupValue(ParsingHelper.TimestampGroupName).ParseLong());
-
-                    var doneTime = _scriptStartTime.EnsureNotNull() + timestampOffset;
-
                     var harEntry = _urlToOpenRequestHarEntryMap.EnsureNotNull().GetValueOrDefault(url);
                     if (harEntry == null)
                     {
@@ -588,15 +595,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
                                 }).");
                     }
 
+                    var doneTime = GetTime(requestDoneMatch);
                     var elapsed = doneTime - harEntry.StartedDateTime.EnsureNotNull();
-                    var timings = harEntry.Timings.EnsureNotNull();
 
-                    //// TODO [vitalii.maklai] Discuss with Stuart
-                    // It seems that it's technically impossible to find out all the send/wait/receive timings from
-                    // the VuGen's output log
-                    timings.Send = 0;
-                    timings.Wait = 0;
-                    timings.Receive = (decimal)elapsed.TotalMilliseconds;
+                    var timings = harEntry.Timings.EnsureNotNull();
+                    timings.Receive = (decimal)elapsed.TotalMilliseconds - timings.Wait.GetValueOrDefault();
 
                     continue;
                 }
