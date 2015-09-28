@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Windows.Data;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 using Omnifactotum.Annotations;
 
@@ -25,7 +26,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             #endregion
@@ -48,7 +49,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException(@"The value can be neither empty string nor null.", "path");
+                throw new ArgumentException(@"The value can be neither empty string nor null.", nameof(path));
             }
 
             #endregion
@@ -64,7 +65,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 
             if (process == null)
             {
-                throw new ArgumentNullException("process");
+                throw new ArgumentNullException(nameof(process));
             }
 
             #endregion
@@ -117,6 +118,35 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
             [NotNull] this Dictionary<TKey, TValue> dictionary)
         {
             return dictionary.ReverseDictionary(null);
+        }
+
+        [NotNull]
+        public static CollectionView ToCollectionView<T>([NotNull] this ICollection<T> collection)
+        {
+            #region Argument Check
+
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            #endregion
+
+            return new CollectionView(collection);
+        }
+
+        public static CollectionViewSource ToCollectionViewSource<T>([NotNull] this ICollection<T> collection)
+        {
+            #region Argument Check
+
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            #endregion
+
+            return new CollectionViewSource { Source = collection };
         }
 
         #endregion

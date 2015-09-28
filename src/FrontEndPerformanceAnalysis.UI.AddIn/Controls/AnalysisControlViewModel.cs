@@ -28,11 +28,28 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private const string OutputLogFileName = @"output.txt";
 
+        private static readonly Dictionary<PageSpeedStrategy, string> PageSpeedStrategyToToolParameterMap =
+            new Dictionary<PageSpeedStrategy, string>
+            {
+                { PageSpeedStrategy.Desktop, "desktop" },
+                { PageSpeedStrategy.Mobile, "mobile" }
+            };
+
+        #endregion
+
+        #region Constants and Fields: Dependency Properties
+
         private static readonly DependencyPropertyKey TransactionsPropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.Transactions);
 
-        private static readonly DependencyPropertyKey ScoreTypesPropertyKey =
+        private static readonly DependencyPropertyKey AnalysisTypesPropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.AnalysisTypes);
+
+        private static readonly DependencyPropertyKey ScoreUtilityTypesPropertyKey =
+            RegisterReadOnlyDependencyProperty(obj => obj.ScoreUtilityTypes);
+
+        private static readonly DependencyPropertyKey PageSpeedStrategiesPropertyKey =
+            RegisterReadOnlyDependencyProperty(obj => obj.PageSpeedStrategies);
 
         private static readonly DependencyPropertyKey PageSpeedResultPropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.PageSpeedResult);
@@ -50,10 +67,24 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 obj => obj.SelectedAnalysisType,
                 new PropertyMetadata(null, OnSelectedAnalysisTypeChanged, OnCoerceSelectedAnalysisType));
 
+        private static readonly DependencyProperty SelectedScoreUtilityTypeProperty =
+            RegisterDependencyProperty(
+                obj => obj.SelectedScoreUtilityType,
+                new PropertyMetadata(null, OnSelectedScoreUtilityTypeChanged, OnCoerceSelectedScoreUtilityType));
+
+        private static readonly DependencyProperty SelectedPageSpeedStrategyProperty =
+            RegisterDependencyProperty(
+                obj => obj.SelectedPageSpeedStrategy,
+                new PropertyMetadata(null, OnSelectedPageSpeedStrategyChanged, OnCoerceSelectedPageSpeedStrategy));
+
         private static readonly string PageSpeedExecutablePath =
             Path.GetFullPath(Settings.Default.PageSpeedExecutablePath);
 
         private static readonly TimeSpan PageSpeedRunTimeout = TimeSpan.FromMinutes(1);
+
+        #endregion
+
+        #region Fields: Dependency Properties
 
         [NotNull]
         private readonly List<TransactionInfo> _transactionInfosInternal;
@@ -74,28 +105,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             _transactionInfosInternal = new List<TransactionInfo>();
             Transactions = new CollectionView(_transactionInfosInternal);
 
-            var scoreTypesInternal = EnumFactotum
-                .GetAllValues<AnalysisType>()
-                .Select(value => ControlItem.Create(value, value.GetTranslation()))
-                .ToArray();
+            AnalysisTypes = CreateCollectionView<AnalysisType>();
+            ScoreUtilityTypes = CreateCollectionView<ScoreUtilityType>();
+            PageSpeedStrategies = CreateCollectionView<PageSpeedStrategy>();
 
-            var analysisTypesCollectionViewSource = new CollectionViewSource
-            {
-                Source = scoreTypesInternal,
-                SortDescriptions =
-                {
-                    new SortDescription(nameof(ControlItem<AnalysisType>.Text), ListSortDirection.Ascending)
-                }
-            };
-
-            AnalysisTypes = analysisTypesCollectionViewSource.View.EnsureNotNull();
-
-            CheckPerformanceCommand = new AsyncRelayCommand(
-                ExecuteCheckPerformanceCommand,
-                CanExecuteCheckPerformanceCommand);
+            AnalyzeCommand = new AsyncRelayCommand(ExecuteAnalyzeCommand, CanExecuteAnalyzeCommand);
 
             Transactions.CurrentChanged += Transactions_CurrentChanged;
             AnalysisTypes.CurrentChanged += AnalysisTypes_CurrentChanged;
+            ScoreUtilityTypes.CurrentChanged += ScoreUtilityTypes_CurrentChanged;
+            PageSpeedStrategies.CurrentChanged += PageSpeedStrategies_CurrentChanged;
 
             if (_projectService != null)
             {
@@ -110,6 +129,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
             CoerceValue(SelectedTransactionProperty);
             CoerceValue(SelectedAnalysisTypeProperty);
+            CoerceValue(SelectedScoreUtilityTypeProperty);
+            CoerceValue(SelectedPageSpeedStrategyProperty);
         }
 
         #endregion
@@ -125,12 +146,30 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
-        public static DependencyProperty ScoreTypesProperty
+        public static DependencyProperty AnalysisTypesProperty
         {
             [DebuggerNonUserCode]
             get
             {
-                return ScoreTypesPropertyKey.DependencyProperty;
+                return AnalysisTypesPropertyKey.DependencyProperty;
+            }
+        }
+
+        public static DependencyProperty ScoreUtilityTypesProperty
+        {
+            [DebuggerNonUserCode]
+            get
+            {
+                return ScoreUtilityTypesPropertyKey.DependencyProperty;
+            }
+        }
+
+        public static DependencyProperty PageSpeedStrategiesProperty
+        {
+            [DebuggerNonUserCode]
+            get
+            {
+                return PageSpeedStrategiesPropertyKey.DependencyProperty;
             }
         }
 
@@ -171,12 +210,82 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         {
             get
             {
-                return (ICollectionView)GetValue(ScoreTypesProperty);
+                return (ICollectionView)GetValue(AnalysisTypesProperty);
             }
 
             private set
             {
-                SetValue(ScoreTypesPropertyKey, value);
+                SetValue(AnalysisTypesPropertyKey, value);
+            }
+        }
+
+        [CanBeNull]
+        public AnalysisType? SelectedAnalysisType
+        {
+            get
+            {
+                return (AnalysisType?)GetValue(SelectedAnalysisTypeProperty);
+            }
+
+            set
+            {
+                SetValue(SelectedAnalysisTypeProperty, value);
+            }
+        }
+
+        [NotNull]
+        public ICollectionView ScoreUtilityTypes
+        {
+            get
+            {
+                return (ICollectionView)GetValue(ScoreUtilityTypesProperty);
+            }
+
+            private set
+            {
+                SetValue(ScoreUtilityTypesPropertyKey, value);
+            }
+        }
+
+        [CanBeNull]
+        public ScoreUtilityType? SelectedScoreUtilityType
+        {
+            get
+            {
+                return (ScoreUtilityType?)GetValue(SelectedScoreUtilityTypeProperty);
+            }
+
+            set
+            {
+                SetValue(SelectedScoreUtilityTypeProperty, value);
+            }
+        }
+
+        [NotNull]
+        public ICollectionView PageSpeedStrategies
+        {
+            get
+            {
+                return (ICollectionView)GetValue(PageSpeedStrategiesProperty);
+            }
+
+            private set
+            {
+                SetValue(PageSpeedStrategiesPropertyKey, value);
+            }
+        }
+
+        [CanBeNull]
+        public PageSpeedStrategy? SelectedPageSpeedStrategy
+        {
+            get
+            {
+                return (PageSpeedStrategy?)GetValue(SelectedPageSpeedStrategyProperty);
+            }
+
+            set
+            {
+                SetValue(SelectedPageSpeedStrategyProperty, value);
             }
         }
 
@@ -222,22 +331,8 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
-        [CanBeNull]
-        public AnalysisType? SelectedAnalysisType
-        {
-            get
-            {
-                return (AnalysisType?)GetValue(SelectedAnalysisTypeProperty);
-            }
-
-            set
-            {
-                SetValue(SelectedAnalysisTypeProperty, value);
-            }
-        }
-
         [NotNull]
-        public AsyncRelayCommand CheckPerformanceCommand
+        public AsyncRelayCommand AnalyzeCommand
         {
             get;
         }
@@ -291,19 +386,79 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             return ((AnalysisControlViewModel)obj).OnCoerceSelectedAnalysisType();
         }
 
+        private static void OnSelectedScoreUtilityTypeChanged(
+            DependencyObject obj,
+            DependencyPropertyChangedEventArgs args)
+        {
+            ((AnalysisControlViewModel)obj).OnSelectedScoreUtilityTypeChanged(args);
+        }
+
+        private static object OnCoerceSelectedScoreUtilityType(DependencyObject obj, object baseValue)
+        {
+            return ((AnalysisControlViewModel)obj).OnCoerceSelectedScoreUtilityType();
+        }
+
+        private static void OnSelectedPageSpeedStrategyChanged(
+            DependencyObject obj,
+            DependencyPropertyChangedEventArgs args)
+        {
+            ((AnalysisControlViewModel)obj).OnSelectedPageSpeedStrategyChanged(args);
+        }
+
+        private static object OnCoerceSelectedPageSpeedStrategy(DependencyObject obj, object baseValue)
+        {
+            return ((AnalysisControlViewModel)obj).OnCoerceSelectedPageSpeedStrategy();
+        }
+
+        [NotNull]
+        private static CollectionView CreateCollectionView<TEnum>() where TEnum : struct
+        {
+            return EnumFactotum
+                .GetAllValues<TEnum>()
+                .Select(value => ControlItem.Create(value, ((Enum)(object)value).GetTranslation()))
+                .ToArray()
+                .ToCollectionView();
+        }
+
         private static PageSpeedOutput RunTools(
             AnalysisType analysisType,
+            ScoreUtilityType? selectedScoreUtilityType,
+            PageSpeedStrategy? selectedPageSpeedStrategy,
             string inputFilePath,
             string outputFilePath)
         {
-            if (analysisType != AnalysisType.ScoreByPageSpeed)
+            if (analysisType != AnalysisType.ScoreAndRuleCompliance)
             {
                 throw analysisType.CreateEnumValueNotImplementedException();
             }
 
+            if (!selectedScoreUtilityType.HasValue)
+            {
+                throw new NotImplementedException();
+            }
+
+            if (selectedScoreUtilityType.Value != ScoreUtilityType.PageSpeed)
+            {
+                throw selectedScoreUtilityType.Value.CreateEnumValueNotImplementedException();
+            }
+
+            if (!selectedPageSpeedStrategy.HasValue)
+            {
+                throw new NotImplementedException();
+            }
+
+            var strategyParameter =
+                PageSpeedStrategyToToolParameterMap.GetValueOrDefault(selectedPageSpeedStrategy.Value);
+
+            if (strategyParameter.IsNullOrWhiteSpace())
+            {
+                throw new NotImplementedException(
+                    $@"The strategy '{selectedPageSpeedStrategy.Value.GetQualifiedName()}' is not mapped.");
+            }
+
             var arguments =
                 $@"-input_file ""{inputFilePath}"" -output_file ""{outputFilePath
-                    }"" -output_format formatted_json -strategy desktop";
+                    }"" -output_format formatted_json -strategy ""{strategyParameter}""";
 
             var startInfo = new ProcessStartInfo(PageSpeedExecutablePath, arguments)
             {
@@ -366,29 +521,69 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             return currentItem?.Value;
         }
 
+        private void OnSelectedScoreUtilityTypeChanged(DependencyPropertyChangedEventArgs args)
+        {
+            var newValue = (ScoreUtilityType?)args.NewValue;
+
+            var item = newValue.HasValue ? ControlItem.Create(newValue.Value) : null;
+            ScoreUtilityTypes.MoveCurrentTo(item);
+        }
+
+        private object OnCoerceSelectedScoreUtilityType()
+        {
+            var currentItem = (ControlItem<ScoreUtilityType>)ScoreUtilityTypes.CurrentItem;
+            return currentItem?.Value;
+        }
+
+        private void OnSelectedPageSpeedStrategyChanged(DependencyPropertyChangedEventArgs args)
+        {
+            var newValue = (PageSpeedStrategy?)args.NewValue;
+
+            var item = newValue.HasValue ? ControlItem.Create(newValue.Value) : null;
+            PageSpeedStrategies.MoveCurrentTo(item);
+        }
+
+        private object OnCoerceSelectedPageSpeedStrategy()
+        {
+            var currentItem = (ControlItem<PageSpeedStrategy>)PageSpeedStrategies.CurrentItem;
+            return currentItem?.Value;
+        }
+
         private void Transactions_CurrentChanged(object sender, EventArgs eventArgs)
         {
-            CheckPerformanceCommand.RaiseCanExecuteChanged();
+            AnalyzeCommand.RaiseCanExecuteChanged();
             CoerceValue(SelectedTransactionProperty);
         }
 
         private void AnalysisTypes_CurrentChanged(object sender, EventArgs eventArgs)
         {
-            CheckPerformanceCommand.RaiseCanExecuteChanged();
             CoerceValue(SelectedAnalysisTypeProperty);
+            AnalyzeCommand.RaiseCanExecuteChanged();
         }
 
-        private bool CanExecuteCheckPerformanceCommand(object arg)
+        private void ScoreUtilityTypes_CurrentChanged(object sender, EventArgs eventArgs)
+        {
+            CoerceValue(SelectedScoreUtilityTypeProperty);
+            AnalyzeCommand.RaiseCanExecuteChanged();
+        }
+
+        private void PageSpeedStrategies_CurrentChanged(object sender, EventArgs eventArgs)
+        {
+            CoerceValue(SelectedPageSpeedStrategyProperty);
+            AnalyzeCommand.RaiseCanExecuteChanged();
+        }
+
+        private bool CanExecuteAnalyzeCommand(object arg)
         {
             return SelectedAnalysisType.HasValue && SelectedTransaction != null
-                && !CheckPerformanceCommand.IsExecuting;
+                && !AnalyzeCommand.IsExecuting;
         }
 
-        private void ExecuteCheckPerformanceCommand(object obj)
+        private void ExecuteAnalyzeCommand(object obj)
         {
             try
             {
-                ExecuteCheckPerformanceCommandInternal();
+                ExecuteAnalyzeCommandInternal();
             }
             catch (Exception ex)
             {
@@ -404,12 +599,16 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
-        private void ExecuteCheckPerformanceCommandInternal()
+        private void ExecuteAnalyzeCommandInternal()
         {
-            var selectedScoreType = Dispatcher.Invoke(() => SelectedAnalysisType, DispatcherPriority.Send);
             var selectedTransaction = Dispatcher.Invoke(() => SelectedTransaction, DispatcherPriority.Send);
+            var selectedAnalysisType = Dispatcher.Invoke(() => SelectedAnalysisType, DispatcherPriority.Send);
+            var selectedScoreUtilityType = Dispatcher.Invoke(() => SelectedScoreUtilityType, DispatcherPriority.Send);
+            var selectedPageSpeedStrategy = Dispatcher.Invoke(
+                () => SelectedPageSpeedStrategy,
+                DispatcherPriority.Send);
 
-            if (!selectedScoreType.HasValue || selectedTransaction == null)
+            if (selectedTransaction == null || !selectedAnalysisType.HasValue)
             {
                 return;
             }
@@ -433,7 +632,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                     selectedTransaction.HarRoot.Serialize(stream);
                 }
 
-                pageSpeedOutput = RunTools(selectedScoreType.Value, inputFilePath, outputFilePath);
+                pageSpeedOutput = RunTools(
+                    selectedAnalysisType.Value,
+                    selectedScoreUtilityType,
+                    selectedPageSpeedStrategy,
+                    inputFilePath,
+                    outputFilePath);
             }
 
             Dispatcher.Invoke(() => PageSpeedResult = pageSpeedOutput, DispatcherPriority.Render);

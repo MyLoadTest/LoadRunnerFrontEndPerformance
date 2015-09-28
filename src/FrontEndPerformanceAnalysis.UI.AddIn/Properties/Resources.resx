@@ -126,14 +126,23 @@
   <data name="Enum_AnalysisType_PageWeight" xml:space="preserve">
     <value>Page weight</value>
   </data>
-  <data name="Enum_AnalysisType_ScoreByPageSpeed" xml:space="preserve">
-    <value>Score by Page Speed</value>
-  </data>
-  <data name="Enum_AnalysisType_ScoreByYSlow" xml:space="preserve">
-    <value>Score by YSlow</value>
+  <data name="Enum_AnalysisType_ScoreAndRuleCompliance" xml:space="preserve">
+    <value>Score and rule compliance</value>
   </data>
   <data name="Enum_AnalysisType_Waterfall" xml:space="preserve">
     <value>Waterfall</value>
+  </data>
+  <data name="Enum_PageSpeedStrategy_Desktop" xml:space="preserve">
+    <value>Desktop</value>
+  </data>
+  <data name="Enum_PageSpeedStrategy_Mobile" xml:space="preserve">
+    <value>Mobile</value>
+  </data>
+  <data name="Enum_ScoreUtilityType_PageSpeed" xml:space="preserve">
+    <value>PageSpeed</value>
+  </data>
+  <data name="Enum_ScoreUtilityType_YSlow" xml:space="preserve">
+    <value>YSlow</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="FrontEndPerformanceAnalysis" type="System.Resources.ResXFileRef, System.Windows.Forms">

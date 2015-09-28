@@ -3,10 +3,9 @@ using System.Linq;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 {
-    internal enum AnalysisType
+    internal enum PageSpeedStrategy
     {
-        ScoreAndRuleCompliance,
-        PageWeight,
-        Waterfall
+        Desktop,
+        Mobile
     }
 }

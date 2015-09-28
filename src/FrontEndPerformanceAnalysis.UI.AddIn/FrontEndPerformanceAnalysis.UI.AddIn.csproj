@@ -137,6 +137,7 @@
     <Compile Include="ObjectMappings\PageSpeed\UrlData.cs" />
     <Compile Include="ObjectMappings\PageSpeed\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
+    <Compile Include="PageSpeedStrategy.cs" />
     <Compile Include="Parsing\MultilineString.cs" />
     <Compile Include="Parsing\ParsingHelper.cs" />
     <Compile Include="Parsing\ResponseBodyType.cs" />
@@ -159,6 +160,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="AnalysisType.cs" />
+    <Compile Include="ScoreUtilityType.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

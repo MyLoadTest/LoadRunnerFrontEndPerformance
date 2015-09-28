@@ -88,20 +88,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Score by Page Speed.
+        ///   Looks up a localized string similar to Score and rule compliance.
         /// </summary>
-        public static string Enum_AnalysisType_ScoreByPageSpeed {
+        public static string Enum_AnalysisType_ScoreAndRuleCompliance {
             get {
-                return ResourceManager.GetString("Enum_AnalysisType_ScoreByPageSpeed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Score by YSlow.
-        /// </summary>
-        public static string Enum_AnalysisType_ScoreByYSlow {
-            get {
-                return ResourceManager.GetString("Enum_AnalysisType_ScoreByYSlow", resourceCulture);
+                return ResourceManager.GetString("Enum_AnalysisType_ScoreAndRuleCompliance", resourceCulture);
             }
         }
         
@@ -111,6 +102,42 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
         public static string Enum_AnalysisType_Waterfall {
             get {
                 return ResourceManager.GetString("Enum_AnalysisType_Waterfall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Desktop.
+        /// </summary>
+        public static string Enum_PageSpeedStrategy_Desktop {
+            get {
+                return ResourceManager.GetString("Enum_PageSpeedStrategy_Desktop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mobile.
+        /// </summary>
+        public static string Enum_PageSpeedStrategy_Mobile {
+            get {
+                return ResourceManager.GetString("Enum_PageSpeedStrategy_Mobile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PageSpeed.
+        /// </summary>
+        public static string Enum_ScoreUtilityType_PageSpeed {
+            get {
+                return ResourceManager.GetString("Enum_ScoreUtilityType_PageSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to YSlow.
+        /// </summary>
+        public static string Enum_ScoreUtilityType_YSlow {
+            get {
+                return ResourceManager.GetString("Enum_ScoreUtilityType_YSlow", resourceCulture);
             }
         }
         

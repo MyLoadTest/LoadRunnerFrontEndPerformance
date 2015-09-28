@@ -16,14 +16,25 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="200">
     <UserControl.Resources>
         <Style x:Key="OptionControlStyle" TargetType="FrameworkElement">
-            <Setter Property="Margin" Value="5,0,5,0" />
+            <Setter Property="Margin" Value="5,2,5,2" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Top" />
         </Style>
 
         <Style TargetType="Button" BasedOn="{StaticResource OptionControlStyle}">
             <Setter Property="Padding" Value="5,0,5,0" />
             <Setter Property="MinWidth" Value="100" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+
+        <Style x:Key="OptionComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource OptionControlStyle}">
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="IsEditable" Value="False" />
+            <Setter Property="MinWidth" Value="150" />
+        </Style>
+
+        <Style x:Key="OptionLabelStyle" TargetType="Label" BasedOn="{StaticResource OptionControlStyle}">
+            <Setter Property="FontWeight" Value="Bold" />
         </Style>
     </UserControl.Resources>
 
@@ -31,7 +42,7 @@
         <controls:AnalysisControlViewModel x:Name="ViewModel" />
     </UserControl.DataContext>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -40,15 +51,14 @@
         <Grid Grid.Row="0" Margin="0,0,0,5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" MinWidth="120" />
+                <ColumnDefinition Width="Auto" MinWidth="150" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" MinWidth="120" />
+                <ColumnDefinition Width="Auto" MinWidth="150" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" MinWidth="120" />
+                <ColumnDefinition Width="Auto" MinWidth="150" />
             </Grid.ColumnDefinitions>
 
             <Grid.Resources>
@@ -73,29 +83,110 @@
                 </Style>
             </Grid.Resources>
 
-            <Label Grid.Row="0" Grid.Column="0" Style="{StaticResource OptionControlStyle}" Content="Transaction _Name"
-                    Target="{Binding ElementName=TransactionNameComboBox}" />
-            <GridSplitter Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" />
-            <Label Grid.Row="0" Grid.Column="2" Style="{StaticResource OptionControlStyle}" Content="T_ype"
-                    Target="{Binding ElementName=ScoreTypeComboBox}" />
-            <GridSplitter Grid.Row="0" Grid.Column="3" Grid.RowSpan="2" />
-            <ComboBox Grid.Row="1" Grid.Column="0" Style="{StaticResource OptionControlStyle}" MinWidth="100"
-                    Name="TransactionNameComboBox" ItemsSource="{Binding Transactions,Mode=OneWay}"
-                    IsSynchronizedWithCurrentItem="True" IsReadOnly="True">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate DataType="parsing:TransactionInfo">
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <ComboBox Grid.Row="1" Grid.Column="2" Style="{StaticResource OptionControlStyle}" MinWidth="100"
-                    Name="ScoreTypeComboBox" ItemsSource="{Binding AnalysisTypes}" IsSynchronizedWithCurrentItem="True" />
-            <Button Grid.Row="1" Grid.Column="4" Content="_Check Performance"
-                    Command="{Binding CheckPerformanceCommand}" />
+            <Grid Grid.Row="0" Grid.Column="0" VerticalAlignment="Stretch" Style="{StaticResource OptionControlStyle}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" MinWidth="160" />
+                </Grid.ColumnDefinitions>
+
+                <Label Grid.Row="0" Grid.Column="0" Style="{StaticResource OptionLabelStyle}" Content="_Transaction"
+                        Target="{Binding ElementName=TransactionComboBox}" />
+                <ComboBox Grid.Row="0" Grid.Column="1" Style="{StaticResource OptionComboBoxStyle}"
+                        Name="TransactionComboBox" ItemsSource="{Binding Transactions,Mode=OneWay}"
+                        IsSynchronizedWithCurrentItem="True" IsReadOnly="True">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="parsing:TransactionInfo">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>
+
+            <GridSplitter Grid.Row="0" Grid.Column="1" />
+
+            <Grid Grid.Row="0" Grid.Column="2" VerticalAlignment="Stretch" Style="{StaticResource OptionControlStyle}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+
+                    <RowDefinition>
+                        <RowDefinition.Style>
+                            <Style TargetType="RowDefinition">
+                                <Setter Property="Height" Value="0" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedAnalysisType}"
+                                            Value="{x:Static self:AnalysisType.ScoreAndRuleCompliance}">
+                                        <Setter Property="Height" Value="Auto" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </RowDefinition.Style>
+                    </RowDefinition>
+
+                    <RowDefinition>
+                        <RowDefinition.Style>
+                            <Style TargetType="RowDefinition">
+                                <Setter Property="Height" Value="0" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SelectedAnalysisType}"
+                                                    Value="{x:Static self:AnalysisType.ScoreAndRuleCompliance}" />
+                                            <Condition Binding="{Binding SelectedScoreUtilityType}"
+                                                    Value="{x:Static self:ScoreUtilityType.PageSpeed}" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Height" Value="Auto" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </RowDefinition.Style>
+                    </RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" MinWidth="160" />
+                </Grid.ColumnDefinitions>
+
+                <Label Grid.Row="0" Grid.Column="0" Style="{StaticResource OptionLabelStyle}" Content="Analy_ze"
+                        Target="{Binding ElementName=AnalysisTypeComboBox}" Margin="5,0" />
+                <ComboBox Grid.Row="0" Grid.Column="1" Style="{StaticResource OptionComboBoxStyle}"
+                        Name="AnalysisTypeComboBox" ItemsSource="{Binding AnalysisTypes}"
+                        IsSynchronizedWithCurrentItem="True" />
+
+                <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource OptionLabelStyle}" Content="using"
+                        Target="{Binding ElementName=ScoreUtilityTypeComboBox}" Margin="5,0" />
+                <ComboBox Grid.Row="1" Grid.Column="1" Style="{StaticResource OptionComboBoxStyle}"
+                        Name="ScoreUtilityTypeComboBox" ItemsSource="{Binding ScoreUtilityTypes}"
+                        IsSynchronizedWithCurrentItem="True" />
+
+                <Label Grid.Row="2" Grid.Column="0" Style="{StaticResource OptionLabelStyle}" Content="with _strategy"
+                        Target="{Binding ElementName=PageSpeedStrategyComboBox}" Margin="5,0" />
+                <ComboBox Grid.Row="2" Grid.Column="1" Style="{StaticResource OptionComboBoxStyle}"
+                        Name="PageSpeedStrategyComboBox" ItemsSource="{Binding PageSpeedStrategies}"
+                        IsSynchronizedWithCurrentItem="True" />
+            </Grid>
+
+            <GridSplitter Grid.Row="0" Grid.Column="3" />
+
+            <Button Grid.Row="0" Grid.Column="4" Content="_Analyze" Command="{Binding AnalyzeCommand}" />
         </Grid>
 
         <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0"
                 Background="Beige">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SelectedAnalysisType}"
+                                Value="{x:Static self:AnalysisType.ScoreAndRuleCompliance}">
+                            <DataTrigger.Setters>
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger.Setters>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -115,19 +206,6 @@
                     Margin="0,5,0,5" SelectionUnit="FullRow" SelectionMode="Extended"
                     ItemsSource="{Binding PageSpeedResult.RuleResults,Mode=OneWay}"
                     IsSynchronizedWithCurrentItem="True">
-                <DataGrid.Style>
-                    <Style TargetType="DataGrid">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedAnalysisType}"
-                                    Value="{x:Static self:AnalysisType.ScoreByPageSpeed}">
-                                <DataTrigger.Setters>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger.Setters>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.Style>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="{x:Static properties:Resources.ColumnName_Rule}" MinWidth="120"
                             Width="*">
