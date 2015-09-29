@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
+namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn
 {
-    internal sealed class ControlItem<T> : IEquatable<ControlItem<T>>
+    internal sealed class DescriptiveItem<T> : IEquatable<DescriptiveItem<T>>
     {
         #region Constants and Fields
 
@@ -14,13 +14,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #region Constructors
 
-        public ControlItem(T value, string text)
+        public DescriptiveItem(T value, string text)
         {
             Value = value;
             Text = text;
         }
 
-        public ControlItem(T value)
+        public DescriptiveItem(T value)
             : this(value, value.ToStringSafelyInvariant())
         {
             // Nothing to do
@@ -33,13 +33,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         public T Value
         {
             get;
-            private set;
         }
 
         public string Text
         {
             get;
-            private set;
         }
 
         #endregion
@@ -48,7 +46,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         public override bool Equals(object obj)
         {
-            return Equals(obj as ControlItem<T>);
+            return Equals(obj as DescriptiveItem<T>);
         }
 
         public override int GetHashCode()
@@ -63,9 +61,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         #endregion
 
-        #region IEquatable<ControlItem<T>> Members
+        #region IEquatable<DescriptiveItem<T>> Members
 
-        public bool Equals(ControlItem<T> other)
+        public bool Equals(DescriptiveItem<T> other)
         {
             if (ReferenceEquals(other, null))
             {

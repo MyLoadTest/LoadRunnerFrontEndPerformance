@@ -10,8 +10,9 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using HP.LR.VuGen.ServiceCore;
 using HP.LR.VuGen.ServiceCore.Interfaces;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis;
+using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis.PageSpeed;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands;
-using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings.PageSpeed;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 using Omnifactotum;
@@ -28,12 +29,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private const string OutputLogFileName = @"output.txt";
 
-        private static readonly Dictionary<PageSpeedStrategy, string> PageSpeedStrategyToToolParameterMap =
-            new Dictionary<PageSpeedStrategy, string>
-            {
-                { PageSpeedStrategy.Desktop, "desktop" },
-                { PageSpeedStrategy.Mobile, "mobile" }
-            };
+        private static readonly ReadOnlyDictionary<PageSpeedStrategy, string> PageSpeedStrategyToToolParameterMap =
+            new ReadOnlyDictionary<PageSpeedStrategy, string>(
+                new Dictionary<PageSpeedStrategy, string>
+                {
+                    { PageSpeedStrategy.Desktop, "desktop" },
+                    { PageSpeedStrategy.Mobile, "mobile" }
+                });
 
         #endregion
 
@@ -51,8 +53,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         private static readonly DependencyPropertyKey PageSpeedStrategiesPropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.PageSpeedStrategies);
 
-        private static readonly DependencyPropertyKey PageSpeedResultPropertyKey =
-            RegisterReadOnlyDependencyProperty(obj => obj.PageSpeedResult);
+        private static readonly DependencyPropertyKey AnalysisResultPropertyKey =
+            RegisterReadOnlyDependencyProperty(
+                obj => obj.AnalysisResult,
+                new PropertyMetadata(OverallAnalysisResult.Empty));
 
         private static readonly DependencyPropertyKey AnalysisErrorMessagePropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.AnalysisErrorMessage);
@@ -105,9 +109,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             _transactionInfosInternal = new List<TransactionInfo>();
             Transactions = new CollectionView(_transactionInfosInternal);
 
-            AnalysisTypes = CreateCollectionView<AnalysisType>();
-            ScoreUtilityTypes = CreateCollectionView<ScoreUtilityType>();
-            PageSpeedStrategies = CreateCollectionView<PageSpeedStrategy>();
+            AnalysisTypes = CreateCollectionViewForEnumeration<AnalysisType>();
+            ScoreUtilityTypes = CreateCollectionViewForEnumeration<ScoreUtilityType>();
+            PageSpeedStrategies = CreateCollectionViewForEnumeration<PageSpeedStrategy>();
 
             AnalyzeCommand = new AsyncRelayCommand(ExecuteAnalyzeCommand, CanExecuteAnalyzeCommand);
 
@@ -173,12 +177,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
-        public static DependencyProperty PageSpeedResultProperty
+        public static DependencyProperty AnalysisResultProperty
         {
             [DebuggerNonUserCode]
             get
             {
-                return PageSpeedResultPropertyKey.DependencyProperty;
+                return AnalysisResultPropertyKey.DependencyProperty;
             }
         }
 
@@ -220,11 +224,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [CanBeNull]
-        public AnalysisType? SelectedAnalysisType
+        public DescriptiveItem<AnalysisType> SelectedAnalysisType
         {
             get
             {
-                return (AnalysisType?)GetValue(SelectedAnalysisTypeProperty);
+                return (DescriptiveItem<AnalysisType>)GetValue(SelectedAnalysisTypeProperty);
             }
 
             set
@@ -289,17 +293,17 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
             }
         }
 
-        [CanBeNull]
-        public PageSpeedOutput PageSpeedResult
+        [NotNull]
+        public OverallAnalysisResult AnalysisResult
         {
             get
             {
-                return (PageSpeedOutput)GetValue(PageSpeedResultProperty);
+                return (OverallAnalysisResult)GetValue(AnalysisResultProperty);
             }
 
             private set
             {
-                SetValue(PageSpeedResultPropertyKey, value);
+                SetValue(AnalysisResultPropertyKey, value);
             }
         }
 
@@ -411,11 +415,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [NotNull]
-        private static CollectionView CreateCollectionView<TEnum>() where TEnum : struct
+        private static CollectionView CreateCollectionViewForEnumeration<TEnum>() where TEnum : struct
         {
             return EnumFactotum
                 .GetAllValues<TEnum>()
-                .Select(value => ControlItem.Create(value, ((Enum)(object)value).GetTranslation()))
+                .Select(value => DescriptiveItem.Create(value, ((Enum)(object)value).GetTranslation()))
                 .ToArray()
                 .ToCollectionView();
         }
@@ -509,29 +513,25 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private void OnSelectedAnalysisTypeChanged(DependencyPropertyChangedEventArgs args)
         {
-            var newValue = (AnalysisType?)args.NewValue;
-
-            var item = newValue.HasValue ? ControlItem.Create(newValue.Value) : null;
-            AnalysisTypes.MoveCurrentTo(item);
+            AnalysisTypes.MoveCurrentTo(args.NewValue);
         }
 
         private object OnCoerceSelectedAnalysisType()
         {
-            var currentItem = (ControlItem<AnalysisType>)AnalysisTypes.CurrentItem;
-            return currentItem?.Value;
+            return (DescriptiveItem<AnalysisType>)AnalysisTypes.CurrentItem;
         }
 
         private void OnSelectedScoreUtilityTypeChanged(DependencyPropertyChangedEventArgs args)
         {
             var newValue = (ScoreUtilityType?)args.NewValue;
 
-            var item = newValue.HasValue ? ControlItem.Create(newValue.Value) : null;
+            var item = newValue.HasValue ? DescriptiveItem.Create(newValue.Value) : null;
             ScoreUtilityTypes.MoveCurrentTo(item);
         }
 
         private object OnCoerceSelectedScoreUtilityType()
         {
-            var currentItem = (ControlItem<ScoreUtilityType>)ScoreUtilityTypes.CurrentItem;
+            var currentItem = (DescriptiveItem<ScoreUtilityType>)ScoreUtilityTypes.CurrentItem;
             return currentItem?.Value;
         }
 
@@ -539,13 +539,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         {
             var newValue = (PageSpeedStrategy?)args.NewValue;
 
-            var item = newValue.HasValue ? ControlItem.Create(newValue.Value) : null;
+            var item = newValue.HasValue ? DescriptiveItem.Create(newValue.Value) : null;
             PageSpeedStrategies.MoveCurrentTo(item);
         }
 
         private object OnCoerceSelectedPageSpeedStrategy()
         {
-            var currentItem = (ControlItem<PageSpeedStrategy>)PageSpeedStrategies.CurrentItem;
+            var currentItem = (DescriptiveItem<PageSpeedStrategy>)PageSpeedStrategies.CurrentItem;
             return currentItem?.Value;
         }
 
@@ -575,7 +575,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private bool CanExecuteAnalyzeCommand(object arg)
         {
-            return SelectedAnalysisType.HasValue && SelectedTransaction != null
+            return SelectedAnalysisType != null && SelectedTransaction != null
                 && !AnalyzeCommand.IsExecuting;
         }
 
@@ -595,7 +595,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 var errorMessage = $"Error has occurred:{Environment.NewLine}{Environment.NewLine}{ex}";
 
                 Dispatcher.Invoke(() => AnalysisErrorMessage = errorMessage, DispatcherPriority.Render);
-                Dispatcher.Invoke(() => PageSpeedResult = null, DispatcherPriority.Render);
+                Dispatcher.Invoke(() => AnalysisResult = OverallAnalysisResult.Empty, DispatcherPriority.Render);
             }
         }
 
@@ -608,13 +608,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 () => SelectedPageSpeedStrategy,
                 DispatcherPriority.Send);
 
-            if (selectedTransaction == null || !selectedAnalysisType.HasValue)
+            if (selectedTransaction == null || selectedAnalysisType == null)
             {
                 return;
             }
 
             Dispatcher.Invoke(() => AnalysisErrorMessage = null, DispatcherPriority.Render);
-            Dispatcher.Invoke(() => PageSpeedResult = null, DispatcherPriority.Render);
+            Dispatcher.Invoke(() => AnalysisResult = OverallAnalysisResult.Empty, DispatcherPriority.Render);
 
             PageSpeedOutput pageSpeedOutput;
             using (var tempFileCollection = new TempFileCollection(Path.GetTempPath(), false))
@@ -640,7 +640,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                     outputFilePath);
             }
 
-            Dispatcher.Invoke(() => PageSpeedResult = pageSpeedOutput, DispatcherPriority.Render);
+            Dispatcher.Invoke(
+                () =>
+                    AnalysisResult =
+                        new OverallAnalysisResult(selectedTransaction, selectedAnalysisType, pageSpeedOutput),
+                DispatcherPriority.Render);
         }
 
         private void RefreshTransactionsInternal()

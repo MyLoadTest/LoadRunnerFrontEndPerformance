@@ -6,11 +6,11 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using Omnifactotum.Annotations;
 
-namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings.PageSpeed
+namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis.PageSpeed
 {
     [DataContract]
     [DebuggerDisplay("Score = {Score}, Version = {Version}, Locale = {Locale}")]
-    internal sealed class PageSpeedOutput
+    internal sealed class PageSpeedOutput: SpecificAnalysisResult
     {
         #region Constants and Fields
 

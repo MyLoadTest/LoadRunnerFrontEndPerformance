@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 
-namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappings.PageSpeed
+namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis.PageSpeed
 {
     [DataContract]
     [DebuggerDisplay("Format = {Format}")]
@@ -23,6 +23,15 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.ObjectMappin
         {
             get;
             set;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public string GetResultString()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

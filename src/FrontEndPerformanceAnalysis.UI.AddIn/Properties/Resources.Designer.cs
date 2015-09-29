@@ -160,5 +160,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to (undefined).
+        /// </summary>
+        public static string UndefinedKeyFieldText {
+            get {
+                return ResourceManager.GetString("UndefinedKeyFieldText", resourceCulture);
+            }
+        }
     }
 }

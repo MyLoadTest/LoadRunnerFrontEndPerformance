@@ -97,6 +97,8 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Analysis\OverallAnalysisResult.cs" />
+    <Compile Include="Analysis\SpecificAnalysisResult.cs" />
     <Compile Include="Commands\RelayCommandBase.cs" />
     <Compile Include="Commands\AsyncRelayCommand.cs" />
     <Compile Include="Commands\RelayCommand.cs" />
@@ -104,8 +106,8 @@
       <DependentUpon>AnalysisControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\AnalysisControlViewModel.cs" />
-    <Compile Include="Controls\ControlItem.cs" />
-    <Compile Include="Controls\ControlItem.Helper.cs" />
+    <Compile Include="DescriptiveItem.cs" />
+    <Compile Include="DescriptiveItem.Helper.cs" />
     <Compile Include="Har\HarCache.cs" />
     <Compile Include="Har\HarCacheInfo.cs" />
     <Compile Include="Har\HarConstants.cs" />
@@ -129,15 +131,15 @@
     <Compile Include="Har\HarQueryStringParameter.cs" />
     <Compile Include="HostCommands\StartupCommand.cs" />
     <Compile Include="LocalHelper.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\FormattedStringArg.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\PageSpeedOutput.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\RuleResult.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\FormattedString.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\UrlBlock.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\UrlData.cs" />
-    <Compile Include="ObjectMappings\PageSpeed\VersionInfo.cs" />
+    <Compile Include="Analysis\PageSpeed\FormattedStringArg.cs" />
+    <Compile Include="Analysis\PageSpeed\PageSpeedOutput.cs" />
+    <Compile Include="Analysis\PageSpeed\RuleResult.cs" />
+    <Compile Include="Analysis\PageSpeed\FormattedString.cs" />
+    <Compile Include="Analysis\PageSpeed\UrlBlock.cs" />
+    <Compile Include="Analysis\PageSpeed\UrlData.cs" />
+    <Compile Include="Analysis\PageSpeed\VersionInfo.cs" />
     <Compile Include="Pads\AnalysisPad.cs" />
-    <Compile Include="PageSpeedStrategy.cs" />
+    <Compile Include="Analysis\PageSpeedStrategy.cs" />
     <Compile Include="Parsing\MultilineString.cs" />
     <Compile Include="Parsing\ParsingHelper.cs" />
     <Compile Include="Parsing\ResponseBodyType.cs" />
@@ -159,8 +161,8 @@
     <Compile Include="Properties\Settings.cs">
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="AnalysisType.cs" />
-    <Compile Include="ScoreUtilityType.cs" />
+    <Compile Include="Analysis\AnalysisType.cs" />
+    <Compile Include="Analysis\ScoreUtilityType.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
