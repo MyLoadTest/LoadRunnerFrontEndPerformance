@@ -1,27 +1,17 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Linq;
+using System.Collections.Generic;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
 using Omnifactotum.Annotations;
 
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis
 {
-    [DebuggerDisplay(
-        "{GetType().Name,nq}. AnalysisType.Value = {AnalysisType.Value}, Transaction.Name = {Transaction?.Name}")]
-    internal sealed class OverallAnalysisResult
+    internal sealed class AnalyzerInput
     {
-        #region Constants and Fields
-
-        public static readonly OverallAnalysisResult Empty = new OverallAnalysisResult();
-
-        #endregion
-
         #region Constructors
 
-        public OverallAnalysisResult(
+        public AnalyzerInput(
             [NotNull] TransactionInfo transaction,
-            [NotNull] DescriptiveItem<AnalysisType> analysisType,
-            [NotNull] SpecificAnalysisResult specificResult)
+            [NotNull] DescriptiveItem<AnalysisType> analysisType)
         {
             #region Argument Check
 
@@ -35,43 +25,38 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis
                 throw new ArgumentNullException(nameof(analysisType));
             }
 
-            if (specificResult == null)
-            {
-                throw new ArgumentNullException(nameof(specificResult));
-            }
-
             #endregion
 
             Transaction = transaction;
             AnalysisType = analysisType;
-            SpecificResult = specificResult;
-        }
-
-        private OverallAnalysisResult()
-        {
-            // Nothing to do
         }
 
         #endregion
 
         #region Public Properties
 
-        [CanBeNull]
-        public DescriptiveItem<AnalysisType> AnalysisType
-        {
-            get;
-        }
-
-        [CanBeNull]
         public TransactionInfo Transaction
         {
             get;
+            private set;
         }
 
-        [CanBeNull]
-        public SpecificAnalysisResult SpecificResult
+        public DescriptiveItem<AnalysisType> AnalysisType
         {
             get;
+            private set;
+        }
+
+        public ScoreUtilityType? ScoreUtilityType
+        {
+            get;
+            set;
+        }
+
+        public PageSpeedStrategy? PageSpeedStrategy
+        {
+            get;
+            set;
         }
 
         #endregion

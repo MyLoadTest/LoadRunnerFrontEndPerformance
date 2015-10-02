@@ -97,7 +97,9 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Analysis\OverallAnalysisResult.cs" />
+    <Compile Include="Analysis\Analyzer.cs" />
+    <Compile Include="Analysis\AnalyzerInput.cs" />
+    <Compile Include="Analysis\AnalyzerOutput.cs" />
     <Compile Include="Analysis\SpecificAnalysisResult.cs" />
     <Compile Include="Commands\RelayCommandBase.cs" />
     <Compile Include="Commands\AsyncRelayCommand.cs" />

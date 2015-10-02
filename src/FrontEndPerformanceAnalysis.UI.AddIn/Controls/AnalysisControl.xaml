@@ -29,7 +29,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,5">
+        <Grid.Resources>
+            <Thickness x:Key="RowMargin">5,0,5,0</Thickness>
+        </Grid.Resources>
+
+        <Grid Grid.Row="0" Margin="{StaticResource RowMargin}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -139,9 +143,10 @@
             <Button Grid.Row="1" Content="Perform _Analysis" Command="{Binding AnalyzeCommand}" />
         </Grid>
 
-        <Separator Grid.Row="1" Height="5" Margin="5,0,5,0" />
+        <Separator Grid.Row="1" Height="5" Margin="{StaticResource RowMargin}" />
 
-        <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0">
+        <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="{StaticResource RowMargin}">
             <Grid.Style>
                 <Style TargetType="Grid">
                     <Setter Property="Visibility" Value="Visible" />
@@ -156,7 +161,8 @@
                 </Style>
             </Grid.Style>
 
-            <WrapPanel Orientation="Horizontal" Background="{x:Static SystemColors.HighlightTextBrush}" Margin="0,7,0,3">
+            <WrapPanel Orientation="Horizontal" Background="{x:Static SystemColors.HighlightTextBrush}"
+                    Margin="0,7,0,3">
                 <WrapPanel.Resources>
                     <Style TargetType="TextBlock" x:Key="BaseTextBlockStyle">
                         <Setter Property="TextWrapping" Value="Wrap" />
@@ -196,7 +202,8 @@
             </WrapPanel>
         </Grid>
 
-        <Grid Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0"
+        <Grid Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="{StaticResource RowMargin}"
                 Background="Beige">
             <Grid.Style>
                 <Style TargetType="Grid">
@@ -281,7 +288,8 @@
             </DataGrid>
         </Grid>
 
-        <Grid Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="{StaticResource RowMargin}">
             <Grid.Style>
                 <Style TargetType="Grid">
                     <Setter Property="Visibility" Value="Collapsed" />
@@ -299,7 +307,8 @@
             <!--<WebBrowser HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />-->
         </Grid>
 
-        <Grid Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="9999">
+        <Grid Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="{StaticResource RowMargin}" Panel.ZIndex="9999">
             <Grid.Style>
                 <Style TargetType="Grid">
                     <Setter Property="Visibility" Value="Visible" />

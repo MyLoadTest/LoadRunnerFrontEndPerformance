@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -11,10 +10,8 @@ using System.Windows.Threading;
 using HP.LR.VuGen.ServiceCore;
 using HP.LR.VuGen.ServiceCore.Interfaces;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis;
-using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis.PageSpeed;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Commands;
 using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing;
-using MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Properties;
 using Omnifactotum;
 using Omnifactotum.Annotations;
 using Omnifactotum.Wpf;
@@ -29,17 +26,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
 
         private const string OutputLogFileName = @"output.txt";
 
-        private static readonly ReadOnlyDictionary<PageSpeedStrategy, string> PageSpeedStrategyToToolParameterMap =
-            new ReadOnlyDictionary<PageSpeedStrategy, string>(
-                new Dictionary<PageSpeedStrategy, string>
-                {
-                    { PageSpeedStrategy.Desktop, "desktop" },
-                    { PageSpeedStrategy.Mobile, "mobile" }
-                });
-
         #endregion
 
-        #region Constants and Fields: Dependency Properties
+        #region Fields: Dependency Properties
 
         private static readonly DependencyPropertyKey TransactionsPropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.Transactions);
@@ -56,7 +45,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         private static readonly DependencyPropertyKey AnalysisResultPropertyKey =
             RegisterReadOnlyDependencyProperty(
                 obj => obj.AnalysisResult,
-                new PropertyMetadata(OverallAnalysisResult.Empty));
+                new PropertyMetadata(AnalyzerOutput.Empty));
 
         private static readonly DependencyPropertyKey AnalysisErrorMessagePropertyKey =
             RegisterReadOnlyDependencyProperty(obj => obj.AnalysisErrorMessage);
@@ -81,14 +70,9 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 obj => obj.SelectedPageSpeedStrategy,
                 new PropertyMetadata(null, OnSelectedPageSpeedStrategyChanged, OnCoerceSelectedPageSpeedStrategy));
 
-        private static readonly string PageSpeedExecutablePath =
-            Path.GetFullPath(Settings.Default.PageSpeedExecutablePath);
-
-        private static readonly TimeSpan PageSpeedRunTimeout = TimeSpan.FromMinutes(1);
-
         #endregion
 
-        #region Fields: Dependency Properties
+        #region Fields
 
         [NotNull]
         private readonly List<TransactionInfo> _transactionInfosInternal;
@@ -294,11 +278,11 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
         }
 
         [NotNull]
-        public OverallAnalysisResult AnalysisResult
+        public AnalyzerOutput AnalysisResult
         {
             get
             {
-                return (OverallAnalysisResult)GetValue(AnalysisResultProperty);
+                return (AnalyzerOutput)GetValue(AnalysisResultProperty);
             }
 
             private set
@@ -424,81 +408,26 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 .ToCollectionView();
         }
 
-        private static PageSpeedOutput RunTools(
-            AnalysisType analysisType,
-            ScoreUtilityType? selectedScoreUtilityType,
-            PageSpeedStrategy? selectedPageSpeedStrategy,
-            string inputFilePath,
-            string outputFilePath)
+        private T SyncComputeValue<T>([NotNull] Func<T> getValue)
         {
-            if (analysisType != AnalysisType.ScoreAndRuleCompliance)
-            {
-                throw analysisType.CreateEnumValueNotImplementedException();
-            }
+            return Dispatcher.Invoke(getValue, DispatcherPriority.Send);
+        }
 
-            if (!selectedScoreUtilityType.HasValue)
-            {
-                throw new NotImplementedException();
-            }
+        private void SyncExecute([NotNull] Action action)
+        {
+            Dispatcher.Invoke(action, DispatcherPriority.Send);
+        }
 
-            if (selectedScoreUtilityType.Value != ScoreUtilityType.PageSpeed)
-            {
-                throw selectedScoreUtilityType.Value.CreateEnumValueNotImplementedException();
-            }
-
-            if (!selectedPageSpeedStrategy.HasValue)
-            {
-                throw new NotImplementedException();
-            }
-
-            var strategyParameter =
-                PageSpeedStrategyToToolParameterMap.GetValueOrDefault(selectedPageSpeedStrategy.Value);
-
-            if (strategyParameter.IsNullOrWhiteSpace())
-            {
-                throw new NotImplementedException(
-                    $@"The strategy '{selectedPageSpeedStrategy.Value.GetQualifiedName()}' is not mapped.");
-            }
-
-            var arguments =
-                $@"-input_file ""{inputFilePath}"" -output_file ""{outputFilePath
-                    }"" -output_format formatted_json -strategy ""{strategyParameter}""";
-
-            var startInfo = new ProcessStartInfo(PageSpeedExecutablePath, arguments)
-            {
-                CreateNoWindow = true,
-                ErrorDialog = false,
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-
-            using (var process = Process.Start(startInfo))
-            {
-                if (process == null)
+        private void SetResultAndErrorMessage(
+            [NotNull] AnalyzerOutput analysisResult,
+            [CanBeNull] string errorMessage)
+        {
+            SyncExecute(
+                () =>
                 {
-                    throw new InvalidOperationException(
-                        $@"Unable to run the required tool ""{PageSpeedExecutablePath}"".");
-                }
-
-                var waitResult = process.WaitForExit((int)PageSpeedRunTimeout.TotalMilliseconds);
-                if (!waitResult)
-                {
-                    process.KillNoThrow();
-
-                    throw new InvalidOperationException(
-                        $@"The tool ""{PageSpeedExecutablePath}"" has not exited after {PageSpeedRunTimeout}.");
-                }
-
-                var exitCode = process.ExitCode;
-                if (exitCode != 0)
-                {
-                    throw new InvalidOperationException(
-                        $@"The tool ""{PageSpeedExecutablePath}"" has exited with the code {exitCode}.");
-                }
-            }
-
-            var pageSpeedOutput = PageSpeedOutput.DeserializeFromFile(outputFilePath);
-            return pageSpeedOutput;
+                    AnalysisResult = analysisResult;
+                    AnalysisErrorMessage = errorMessage;
+                });
         }
 
         private void OnSelectedTransactionChanged(DependencyPropertyChangedEventArgs args)
@@ -593,58 +522,37 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Controls
                 }
 
                 var errorMessage = $"Error has occurred:{Environment.NewLine}{Environment.NewLine}{ex}";
-
-                Dispatcher.Invoke(() => AnalysisErrorMessage = errorMessage, DispatcherPriority.Render);
-                Dispatcher.Invoke(() => AnalysisResult = OverallAnalysisResult.Empty, DispatcherPriority.Render);
+                SetResultAndErrorMessage(AnalyzerOutput.Empty, errorMessage);
             }
         }
 
         private void ExecuteAnalyzeCommandInternal()
         {
-            var selectedTransaction = Dispatcher.Invoke(() => SelectedTransaction, DispatcherPriority.Send);
-            var selectedAnalysisType = Dispatcher.Invoke(() => SelectedAnalysisType, DispatcherPriority.Send);
-            var selectedScoreUtilityType = Dispatcher.Invoke(() => SelectedScoreUtilityType, DispatcherPriority.Send);
-            var selectedPageSpeedStrategy = Dispatcher.Invoke(
-                () => SelectedPageSpeedStrategy,
-                DispatcherPriority.Send);
+            var selectedTransaction = SyncComputeValue(() => SelectedTransaction);
+            var selectedAnalysisType = SyncComputeValue(() => SelectedAnalysisType);
+            var selectedScoreUtilityType = SyncComputeValue(() => SelectedScoreUtilityType);
+            var selectedPageSpeedStrategy = SyncComputeValue(() => SelectedPageSpeedStrategy);
 
             if (selectedTransaction == null || selectedAnalysisType == null)
             {
                 return;
             }
 
-            Dispatcher.Invoke(() => AnalysisErrorMessage = null, DispatcherPriority.Render);
-            Dispatcher.Invoke(() => AnalysisResult = OverallAnalysisResult.Empty, DispatcherPriority.Render);
+            SetResultAndErrorMessage(AnalyzerOutput.Empty, null);
 
-            PageSpeedOutput pageSpeedOutput;
-            using (var tempFileCollection = new TempFileCollection(Path.GetTempPath(), false))
+            var analyzerInput = new AnalyzerInput(selectedTransaction, selectedAnalysisType)
             {
-                var fileName = Path.ChangeExtension(Path.GetRandomFileName(), ".har");
+                ScoreUtilityType = selectedScoreUtilityType,
+                PageSpeedStrategy = selectedPageSpeedStrategy
+            };
 
-                var inputFilePath = Path.Combine(Path.GetTempPath(), fileName);
-                tempFileCollection.AddFile(inputFilePath, false);
+            var analyzerOutput = new Analyzer().Analyze(analyzerInput);
 
-                var outputFilePath = inputFilePath + ".json";
-                tempFileCollection.AddFile(outputFilePath, false);
+            var errorMessage = analyzerOutput.Exception == null
+                ? null
+                : $@"Error has occurred:{Environment.NewLine}{Environment.NewLine}{analyzerOutput.Exception}";
 
-                using (var stream = File.Create(inputFilePath))
-                {
-                    selectedTransaction.HarRoot.Serialize(stream);
-                }
-
-                pageSpeedOutput = RunTools(
-                    selectedAnalysisType.Value,
-                    selectedScoreUtilityType,
-                    selectedPageSpeedStrategy,
-                    inputFilePath,
-                    outputFilePath);
-            }
-
-            Dispatcher.Invoke(
-                () =>
-                    AnalysisResult =
-                        new OverallAnalysisResult(selectedTransaction, selectedAnalysisType, pageSpeedOutput),
-                DispatcherPriority.Render);
+            SetResultAndErrorMessage(analyzerOutput, errorMessage);
         }
 
         private void RefreshTransactionsInternal()
