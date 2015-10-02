@@ -39,6 +39,13 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis.Pag
             set;
         }
 
+        [DataMember(Name = "summary_line")]
+        public FormattedString SummaryLine
+        {
+            get;
+            set;
+        }
+
         [DataMember(Name = "url_blocks")]
         public UrlBlock[] UrlBlocks
         {
