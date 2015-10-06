@@ -29,7 +29,10 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
         private Dictionary<long, HarEntry> _internalIdToHarEntryMap;
         private Dictionary<string, HarEntry> _urlToOpenRequestHarEntryMap;
         private HarPage _harPage;
+
+        [CanBeNull]
         private string _line;
+
         private int _lineIndex;
         private bool _skipFetchOnce;
         private List<TransactionInfo> _transactionInfos;
@@ -427,17 +430,14 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         private void ProcessResponseBody([NotNull] Match match)
         {
-            //// TODO [vmcl] Parse response body (content)
-
             var responseBodyType = ParsingHelper.GetResponseBodyType(match);
             if (responseBodyType == ResponseBodyType.Decoded)
             {
-                //// TODO [vmcl] Determine HarContent.SavedByCompression
                 return;
             }
 
-            var size = match.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
             var internalId = match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
+            var size = match.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
 
             var harEntry = _internalIdToHarEntryMap.EnsureNotNull().GetValueOrDefault(internalId);
             if (harEntry == null)
@@ -447,7 +447,50 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             }
 
             var harResponse = harEntry.Response.EnsureNotNull();
+            var harContent = harResponse.Content.EnsureNotNull();
+
             harResponse.BodySize = harResponse.BodySize.GetValueOrDefault() + size;
+
+            if (responseBodyType != ResponseBodyType.Encoded)
+            {
+                harContent.Size = harContent.Size.GetValueOrDefault() + size;
+                harContent.SavedByCompression = 0;
+            }
+            else
+            {
+                const ResponseBodyType ExpectedBodyType = ResponseBodyType.Decoded;
+
+                FetchLine();
+                var nextMatch = _line.MatchAgainst(ParsingHelper.ResponseBodyMarkerRegex);
+                if (!nextMatch.Success)
+                {
+                    //// No decoded body
+                    _skipFetchOnce = true;
+                    return;
+                }
+
+                var nextMatchBodyType = ParsingHelper.GetResponseBodyType(nextMatch);
+                if (nextMatchBodyType != ExpectedBodyType)
+                {
+                    throw new InvalidOperationException(
+                        $@"The type of the response body that follows the response body of the type '{responseBodyType
+                            }' must be '{ExpectedBodyType}' (line {_lineIndex}).");
+                }
+
+                var nextInternalId = nextMatch.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
+                if (nextInternalId != internalId)
+                {
+                    throw new InvalidOperationException(
+                        $@"The internal ID mismatch occurred at line {_lineIndex}. Expected: {internalId}, actual: {
+                            nextInternalId}.");
+                }
+
+                var nextSize = nextMatch.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
+                harContent.Size = harContent.Size.GetValueOrDefault() + nextSize;
+                harContent.SavedByCompression = harContent.SavedByCompression.GetValueOrDefault() + (nextSize - size);
+            }
+
+            //// TODO [vmcl] Parse response body (content)
         }
 
         private void ParseInternal()
