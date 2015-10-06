@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis.PageSpeed
 {
     [DataContract]
-    [DebuggerDisplay("{GetType().Name,nq}. Format = {Format}")]
+    [DebuggerDisplay("[{GetType().Name,nq}] {ToString()}")]
     internal sealed class FormattedString
     {
         #region Constants and Fields
