@@ -76,7 +76,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis
         {
             if (!scoreUtilityType.HasValue)
             {
-                throw new NotImplementedException();
+                throw new ArgumentNullException(nameof(scoreUtilityType));
             }
 
             if (scoreUtilityType.Value != ScoreUtilityType.PageSpeed)
@@ -86,7 +86,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis
 
             if (!pageSpeedStrategy.HasValue)
             {
-                throw new NotImplementedException();
+                throw new ArgumentNullException(nameof(pageSpeedStrategy));
             }
 
             var strategyParameter =
@@ -94,7 +94,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Analysis
 
             if (strategyParameter.IsNullOrWhiteSpace())
             {
-                throw new NotImplementedException(
+                throw new NotSupportedException(
                     $@"The strategy '{pageSpeedStrategy.Value.GetQualifiedName()}' is not mapped.");
             }
 

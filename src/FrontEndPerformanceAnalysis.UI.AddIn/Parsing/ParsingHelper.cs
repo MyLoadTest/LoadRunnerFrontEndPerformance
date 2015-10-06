@@ -88,7 +88,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             $@"UTC \(GMT\) start date\/time\s*:\s*(?<{DateYearGroupName}>{DateYearPattern})\-(?<{DateMonthGroupName}>{
                 DateMonthPattern})\-(?<{DateDayGroupName}>{DateDayPattern}) (?<{DateHourGroupName}>{DateHourPattern
                 })\:(?<{DateMinuteGroupName}>{DateMinutePattern})\:(?<{DateSecondGroupName}>{DateSecondPattern
-                })\s+\[MsgId\: MMSG\-\d+\]$",
+                })\s+\[MsgId\: \p{{L}}{{4}}\-\d+\]$",
             DefaultRegexOptions);
 
         public static readonly Regex IPEndPointRegex = new Regex(
@@ -110,12 +110,12 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Connected socket \[(?<{
                 SocketIdGroupName}>{SocketIdPattern})\] from (?<{SourceEndpointGroupName}>{IPAddressAndPortPattern
                 }) to (?<{TargetEndpointGroupName}>{IPAddressAndPortPattern}) in (?<{DurationGroupName
-                }>\d+) ms\s+\[MsgId\: MMSG\-\d+\]$",
+                }>\d+) ms\s+\[MsgId\: \p{{L}}{{4}}\-\d+\]$",
             DefaultRegexOptions);
 
         public static readonly Regex AlreadyConnectedRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Already connected \[(?<{
-                SocketIdGroupName}>{SocketIdPattern})\] to \S*?\s+\[MsgId\: MMSG\-\d+\]$",
+                SocketIdGroupName}>{SocketIdPattern})\] to \S*?\s+\[MsgId\: \p{{L}}{{4}}\-\d+\]$",
             DefaultRegexOptions);
 
         public static readonly Regex RequestHeadersMarkerRegex = new Regex(
@@ -166,7 +166,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
 
         public static readonly Regex RequestDoneRegex = new Regex(
             $@"{FileAndPositionPrefixPattern} t=(?<{TimestampGroupName}>\d+)ms\: Request done ""(?<{UrlGroupName
-                }>[^""]+)""\s+\[MsgId\: MMSG\-\d+\]$",
+                }>[^""]+)""\s+\[MsgId\: \p{{L}}{{4}}\-\d+\]$",
             DefaultRegexOptions);
 
         #endregion

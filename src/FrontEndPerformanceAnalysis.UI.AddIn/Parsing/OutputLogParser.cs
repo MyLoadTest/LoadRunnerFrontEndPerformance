@@ -374,7 +374,7 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             harRequest.Headers = harHeaders;
         }
 
-        private void ProcessResponseHeaders(Match match)
+        private void ProcessResponseHeaders([NotNull] Match match)
         {
             var size = match.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
             var internalId = match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
@@ -425,19 +425,19 @@ namespace MyLoadTest.LoadRunnerFrontEndPerformanceAnalysis.UI.AddIn.Parsing
             harResponse.Headers = harHeaders;
         }
 
-        private void ProcessResponseBody([NotNull] Match responseBodyMatch)
+        private void ProcessResponseBody([NotNull] Match match)
         {
             //// TODO [vmcl] Parse response body (content)
 
-            var responseBodyType = ParsingHelper.GetResponseBodyType(responseBodyMatch);
+            var responseBodyType = ParsingHelper.GetResponseBodyType(match);
             if (responseBodyType == ResponseBodyType.Decoded)
             {
                 //// TODO [vmcl] Determine HarContent.SavedByCompression
                 return;
             }
 
-            var size = responseBodyMatch.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
-            var internalId = responseBodyMatch.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
+            var size = match.GetSucceededGroupValue(ParsingHelper.SizeGroupName).ParseLong();
+            var internalId = match.GetSucceededGroupValue(ParsingHelper.InternalIdGroupName).ParseLong();
 
             var harEntry = _internalIdToHarEntryMap.EnsureNotNull().GetValueOrDefault(internalId);
             if (harEntry == null)
